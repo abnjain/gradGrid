@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+:root {
+  --color-background: #ffffff;
+  --color-foreground: #030303;
+  --color-primary: #3b82f6;
+  --color-primary-foreground: #f0f4f8;
+  --color-secondary: #1f2937;
+  --color-secondary-foreground: #f9fafb;
+  --color-muted: #e5e7eb;
+  --color-muted-foreground: #6b7280;
+  --color-input: #dee2e6;
+  --color-border: #dee2e6;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #0ea5e9;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #1f2937;
+    --color-foreground: #f9fafb;
+    --color-primary: #3b82f6;
+    --color-primary-foreground: #1e3a8a;
+    --color-secondary: #111827;
+    --color-secondary-foreground: #f9fafb;
+    --color-muted: #374151;
+    --color-muted-foreground: #d1d5db;
+    --color-input: #4b5563;
+    --color-border: #4b5563;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: var(--color-background);
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+* {
+  border-color: var(--color-border);
+}
