@@ -6,713 +6,375 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Alert } from '@/components/ui/alert'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Avatar } from '@/components/ui/avatar'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Select } from '@/components/ui/select'
 import {
   AlertCircle,
   CheckCircle2,
   AlertTriangle,
   Info,
+  Mail,
+  Phone,
+  Eye,
+  EyeOff,
+  Download,
+  Edit3,
+  Award,
   Users,
   BookOpen,
-  IdCard,
-  Calendar,
-  FileText,
-  Download,
-  Eye,
   Loader,
-  Clock,
-  Award,
 } from 'lucide-react'
 
-export default function DesignSystemPage() {
-  const [showToast, setShowToast] = useState(false)
+export default function ComponentShowcase() {
+  const [showPassword, setShowPassword] = useState(false)
+  const [checked, setChecked] = useState({ terms: false, newsletter: false, notifications: false })
 
-  const studentData = {
-    personalInfo: {
-      name: 'Aarav Kumar Singh',
-      dateOfBirth: '15-05-2008',
-      gender: 'Male',
-      religion: 'Hindu',
-      caste: 'General',
-      category: 'General',
-      handicapped: 'No',
-      aadharCard: '1234 5678 9012',
-      childId: 'CH-2024-001',
-      familyId: 'FAM-2024-001',
-    },
-    academicInfo: {
-      class: '12-A',
-      section: 'A',
-      scholarNo: 'SCH-2024-12001',
-      studentType: 'Old Student',
-      dateOfAdmission: '01-04-2018',
-      stream: 'Science',
-      enrollmentNo: 'ENR-2024-001',
-      house: 'Blue House',
-      medium: 'English',
-      previousSchool: 'Delhi Public School',
-      previousCity: 'Delhi',
-      lastClass: '11-A',
-      lastResult: 'A+',
-    },
-    parentInfo: {
-      fatherName: 'Rajesh Kumar Singh',
-      fatherDOB: '12-03-1970',
-      fatherQualification: 'B.Tech',
-      fatherOccupation: 'Software Engineer',
-      fatherMobile: '+91-98765-43210',
-      motherName: 'Priya Singh',
-      motherDOB: '20-06-1975',
-      motherQualification: 'M.A',
-      motherOccupation: 'Teacher',
-      motherMobile: '+91-98765-43211',
-      dateOfAnniversary: '15-06-1995',
-    },
-    contactInfo: {
-      email: 'aarav.kumar@example.com',
-      mobileNo: '+91-98765-43212',
-      otherContactNo: '+91-98765-43213',
-      address: '123, Green Avenue, Sector-5',
-      landmark: 'Near City Hospital',
-      cityGramPost: 'New Delhi',
-      district: 'Delhi',
-      pinCode: '110001',
-      state: 'Delhi',
-    },
-    bankInfo: {
-      bankName: 'HDFC Bank',
-      accountNo: '1234567890123456',
-      ifscCode: 'HDFC0001234',
-      accountHolderName: 'Rajesh Kumar Singh',
-    },
-    otherInfo: {
-      scholarship: 'Merit Scholarship',
-      admittedClass: '9-A',
-      route: 'Route-5',
-    },
-  }
+  const students = [
+    { name: 'Aarav Kumar', rollNo: '001', email: 'aarav@school.com', status: 'Active', grade: 'A+' },
+    { name: 'Priya Singh', rollNo: '002', email: 'priya@school.com', status: 'Active', grade: 'A' },
+    { name: 'Rohan Sharma', rollNo: '003', email: 'rohan@school.com', status: 'Active', grade: 'A+' },
+    { name: 'Maya Patel', rollNo: '004', email: 'maya@school.com', status: 'Inactive', grade: 'B+' },
+  ]
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Coming Soon Banner */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 flex items-center justify-between">
-        <span className="flex items-center gap-2">
-          <Clock className="w-4 h-4" />
-          <span className="text-sm font-medium">Premium Features Coming Soon</span>
-        </span>
-        <button className="text-xs underline hover:opacity-80">Dismiss</button>
-      </div>
-
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Header */}
-        <div className="space-y-2">
-          <h1 className="text-4xl font-bold text-foreground">GradGrid Design System</h1>
-          <p className="text-muted-foreground">
-            Complete UI/UX component library with all design principles applied
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-8">
+      <div className="max-w-7xl mx-auto space-y-12">
+        {/* HEADER */}
+        <div className="space-y-3">
+          <h1 className="text-5xl font-bold text-foreground">GradGrid UI Components</h1>
+          <p className="text-lg text-muted-foreground">
+            Complete production-ready component library for Education ERP platform
           </p>
         </div>
 
-        {/* Tabs for different sections */}
-        <Tabs defaultValue="components">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
-            <TabsTrigger value="components">Components</TabsTrigger>
-            <TabsTrigger value="profile">Student Profile</TabsTrigger>
-            <TabsTrigger value="forms">Forms & States</TabsTrigger>
-          </TabsList>
+        {/* BUTTONS */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Award className="w-5 h-5" />
+              Buttons
+            </CardTitle>
+            <CardDescription>All button variants, sizes, and states</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <p className="text-sm font-semibold mb-3">Primary Buttons</p>
+              <div className="flex flex-wrap gap-3">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white">Primary</Button>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white" disabled>Disabled</Button>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white"><Mail className="w-4 h-4 mr-2" />With Icon</Button>
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-semibold mb-3">Secondary Buttons</p>
+              <div className="flex flex-wrap gap-3">
+                <Button className="border border-border hover:bg-muted text-foreground">Ghost</Button>
+                <Button className="border border-red-500 text-red-600 hover:bg-red-50">Danger</Button>
+                <Button className="border border-green-500 text-green-600 hover:bg-green-50">Success</Button>
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-semibold mb-3">Sizes</p>
+              <div className="flex flex-wrap gap-3 items-center">
+                <Button className="text-xs px-2 py-1 bg-blue-600 text-white">XS</Button>
+                <Button className="text-sm px-3 py-1.5 bg-blue-600 text-white">Small</Button>
+                <Button className="bg-blue-600 text-white">Medium</Button>
+                <Button className="text-lg px-8 py-3 bg-blue-600 text-white">Large</Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Components Tab */}
-          <TabsContent value="components" className="space-y-8 mt-6">
-            {/* Buttons Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Award className="w-5 h-5" />
-                  Button States
-                </CardTitle>
-                <CardDescription>All button variants and states</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm font-medium mb-3 text-foreground">Primary Buttons</p>
-                    <div className="flex gap-2 flex-wrap">
-                      <Button variant="default">Default</Button>
-                      <Button variant="default" disabled>
-                        Disabled
-                      </Button>
-                      <Button variant="default" onClick={() => setShowToast(true)}>
-                        With Action
-                      </Button>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium mb-3 text-foreground">Secondary Buttons</p>
-                    <div className="flex gap-2 flex-wrap">
-                      <Button variant="outline">Outline</Button>
-                      <Button variant="outline" disabled>
-                        Disabled
-                      </Button>
-                      <Button variant="ghost">Ghost</Button>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium mb-3 text-foreground">Danger Buttons</p>
-                    <div className="flex gap-2 flex-wrap">
-                      <Button variant="destructive">Delete</Button>
-                      <Button variant="destructive" disabled>
-                        Disabled
-                      </Button>
-                    </div>
-                  </div>
+        {/* INPUTS */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Input Fields</CardTitle>
+            <CardDescription>Various input states and configurations</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Default Input</label>
+              <Input placeholder="Enter text..." />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Email Input</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                <Input type="email" placeholder="user@example.com" className="pl-10" />
+              </div>
+              <p className="text-xs text-green-600 mt-1">✓ Valid email</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Password Input</label>
+              <div className="relative">
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter password"
+                  defaultValue="password123"
+                />
+                <button
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-muted-foreground"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Disabled Input</label>
+              <Input placeholder="Cannot edit" disabled defaultValue="GradGrid-2024-001" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* BADGES */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Badges & Status Indicators</CardTitle>
+            <CardDescription>Tags and status badges</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <p className="text-sm font-semibold mb-3">Status Badges</p>
+              <div className="flex flex-wrap gap-2">
+                <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">Active</Badge>
+                <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100">Pending</Badge>
+                <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100">Inactive</Badge>
+                <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">Info</Badge>
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-semibold mb-3">Grade Badges</p>
+              <div className="flex flex-wrap gap-2">
+                <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100">A+</Badge>
+                <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">A</Badge>
+                <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">B</Badge>
+                <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100">C</Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ALERTS */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Alerts & Notifications</CardTitle>
+            <CardDescription>Alert states and messages</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Alert className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r">
+              <Info className="w-4 h-4 inline mr-2 text-blue-600" />
+              <span className="text-blue-800">This is an informational message</span>
+            </Alert>
+            <Alert className="bg-green-50 border-l-4 border-green-500 p-4 rounded-r">
+              <CheckCircle2 className="w-4 h-4 inline mr-2 text-green-600" />
+              <span className="text-green-800">Operation completed successfully</span>
+            </Alert>
+            <Alert className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r">
+              <AlertTriangle className="w-4 h-4 inline mr-2 text-amber-600" />
+              <span className="text-amber-800">Warning: Please verify this action</span>
+            </Alert>
+            <Alert className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r">
+              <AlertCircle className="w-4 h-4 inline mr-2 text-red-600" />
+              <span className="text-red-800">Error: Something went wrong</span>
+            </Alert>
+          </CardContent>
+        </Card>
+
+        {/* AVATARS */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Avatars
+            </CardTitle>
+            <CardDescription>User profile avatars</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-6 flex-wrap">
+              <Avatar className="w-12 h-12 bg-blue-500 text-white font-bold flex items-center justify-center rounded-full">
+                AK
+              </Avatar>
+              <Avatar className="w-12 h-12 bg-purple-500 text-white font-bold flex items-center justify-center rounded-full">
+                RS
+              </Avatar>
+              <Avatar className="w-12 h-12 bg-green-500 text-white font-bold flex items-center justify-center rounded-full">
+                MP
+              </Avatar>
+              <Avatar className="w-12 h-12 bg-orange-500 text-white font-bold flex items-center justify-center rounded-full">
+                SN
+              </Avatar>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* FORMS */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Form Elements</CardTitle>
+            <CardDescription>Textarea, Checkboxes, and Select components</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Comments</label>
+              <Textarea placeholder="Enter your feedback here..." className="border border-border rounded-md p-3 min-h-24" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-3 block">Preferences</label>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={checked.terms}
+                    onChange={() => setChecked({ ...checked, terms: !checked.terms })}
+                  />
+                  <label className="text-sm cursor-pointer">I agree to terms and conditions</label>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Badges Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Award className="w-5 h-5" />
-                  Badge Styles
-                </CardTitle>
-                <CardDescription>Status indicators and tags</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2 flex-wrap">
-                  <Badge variant="default">Active</Badge>
-                  <Badge variant="success">Success</Badge>
-                  <Badge variant="warning">Pending</Badge>
-                  <Badge variant="danger">Inactive</Badge>
-                  <Badge variant="info">Info</Badge>
-                  <Badge variant="secondary">Secondary</Badge>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={checked.newsletter}
+                    onChange={() => setChecked({ ...checked, newsletter: !checked.newsletter })}
+                  />
+                  <label className="text-sm cursor-pointer">Subscribe to newsletter</label>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Avatars Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Avatar Styles
-                </CardTitle>
-                <CardDescription>User avatars with images and initials</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  <div>
-                    <p className="text-sm font-medium mb-4 text-foreground">Avatar with Initials</p>
-                    <div className="flex gap-4 items-center">
-                      <Avatar>
-                        <AvatarFallback>AK</AvatarFallback>
-                      </Avatar>
-                      <Avatar>
-                        <AvatarFallback>RS</AvatarFallback>
-                      </Avatar>
-                      <Avatar>
-                        <AvatarFallback>PS</AvatarFallback>
-                      </Avatar>
-                      <Avatar>
-                        <AvatarFallback>MJ</AvatarFallback>
-                      </Avatar>
-                    </div>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox checked={true} disabled />
+                  <label className="text-sm cursor-pointer text-muted-foreground">Disabled checkbox</label>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Select Class</label>
+              <Select
+                options={[
+                  { label: 'Class 9-A', value: '9a' },
+                  { label: 'Class 10-A', value: '10a' },
+                  { label: 'Class 12-A', value: '12a' },
+                ]}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* Loading States */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Loader className="w-5 h-5 animate-spin" />
-                  Loading States
-                </CardTitle>
-                <CardDescription>Skeletons and progress indicators</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <p className="text-sm font-medium mb-3 text-foreground">Skeleton Loading</p>
-                  <div className="space-y-2">
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-full" />
-                    <Skeleton className="h-12 w-2/3" />
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-3 text-foreground">Progress Bar</p>
-                  <div className="w-full bg-secondary rounded-full h-2">
-                    <div className="bg-primary h-2 rounded-full" style={{ width: '65%' }}></div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">65% Complete</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-3 text-foreground">Spinner</p>
-                  <Loader className="w-6 h-6 animate-spin text-primary" />
-                </div>
-              </CardContent>
-            </Card>
+        {/* SKELETON LOADING */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Loader className="w-5 h-5 animate-spin" />
+              Loading States
+            </CardTitle>
+            <CardDescription>Skeleton screens and spinners</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <p className="text-sm font-semibold mb-2">Skeleton Loaders</p>
+              <Skeleton className="h-12 w-full mb-2" />
+              <Skeleton className="h-12 w-full mb-2" />
+              <Skeleton className="h-12 w-2/3" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold mb-2">Progress Bar</p>
+              <div className="w-full bg-muted rounded-full h-2">
+                <div className="bg-blue-600 h-2 rounded-full" style={{ width: '70%' }}></div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">70% Complete</p>
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* Alerts Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5" />
-                  Alerts & Toasts
-                </CardTitle>
-                <CardDescription>Message and notification states</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Alert variant="default">
-                  <Info className="h-4 w-4" />
-                  <span>This is an informational message</span>
-                </Alert>
-                <Alert variant="success">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span>Operation completed successfully</span>
-                </Alert>
-                <Alert variant="warning">
-                  <AlertTriangle className="h-4 w-4" />
-                  <span>Warning: Please review this action</span>
-                </Alert>
-                <Alert variant="error">
-                  <AlertCircle className="h-4 w-4" />
-                  <span>Error: Something went wrong</span>
-                </Alert>
+        {/* TABLE */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5" />
+              Data Table
+            </CardTitle>
+            <CardDescription>Student information table</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableHeader>Name</TableHeader>
+                    <TableHeader>Roll No</TableHeader>
+                    <TableHeader>Email</TableHeader>
+                    <TableHeader>Status</TableHeader>
+                    <TableHeader>Grade</TableHeader>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {students.map(student => (
+                    <TableRow key={student.rollNo}>
+                      <TableCell className="font-medium">{student.name}</TableCell>
+                      <TableCell>{student.rollNo}</TableCell>
+                      <TableCell>{student.email}</TableCell>
+                      <TableCell>
+                        <Badge className={student.status === 'Active' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' : 'bg-gray-100 text-gray-800'}>
+                          {student.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{student.grade}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
 
-                {showToast && (
-                  <div className="fixed bottom-4 right-4 bg-primary text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Action completed successfully</span>
-                    <button onClick={() => setShowToast(false)} className="ml-2 text-xs underline">
-                      Dismiss
-                    </button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+        {/* STUDENT PROFILE CARD */}
+        <Card className="border-2 border-blue-500/30">
+          <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-t-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Aarav Kumar Singh</CardTitle>
+                <CardDescription className="text-blue-100">Student ID: GradGrid-2024-001</CardDescription>
+              </div>
+              <Avatar className="w-16 h-16 bg-white text-blue-600 font-bold text-xl flex items-center justify-center rounded-full">
+                AK
+              </Avatar>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground">Class</p>
+                <p className="font-semibold">12-A</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Stream</p>
+                <p className="font-semibold">Science</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Roll No</p>
+                <p className="font-semibold">001</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Status</p>
+                <p className="font-semibold text-green-600">Active</p>
+              </div>
+            </div>
+            <div className="border-t pt-4 space-y-2 text-sm">
+              <p><span className="text-muted-foreground">Email:</span> aarav.kumar@school.com</p>
+              <p><span className="text-muted-foreground">Phone:</span> +91 9876543210</p>
+              <p><span className="text-muted-foreground">DOB:</span> 15 Jan 2006</p>
+              <p><span className="text-muted-foreground">Address:</span> 123 Main Street, Delhi</p>
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button className="flex-1 bg-blue-600 text-white gap-2"><Download className="w-4 h-4" />Download</Button>
+              <Button className="flex-1 border border-border hover:bg-muted gap-2"><Edit3 className="w-4 h-4" />Edit</Button>
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* ID Cards Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IdCard className="w-5 h-5" />
-                  ID Card Designs
-                </CardTitle>
-                <CardDescription>Student and staff ID card layouts</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Student ID Card */}
-                  <div className="border-2 border-primary rounded-lg p-6 bg-gradient-to-br from-blue-50 to-blue-100">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <p className="text-xs text-muted-foreground font-medium">STUDENT ID CARD</p>
-                        <p className="text-lg font-bold text-primary">SCH-2024-12001</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground">Valid Till</p>
-                        <p className="font-semibold">31-03-2025</p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-4 mb-4 pb-4 border-b">
-                      <Avatar className="h-20 w-20 border-4 border-white shadow">
-                        <AvatarFallback className="text-lg">AK</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <p className="font-bold text-foreground">Aarav Kumar Singh</p>
-                        <p className="text-sm text-muted-foreground">Class 12-A</p>
-                        <p className="text-sm text-muted-foreground">Roll No. 01</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Date of Birth</p>
-                        <p className="font-medium">15-05-2008</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Gender</p>
-                        <p className="font-medium">Male</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Staff ID Card */}
-                  <div className="border-2 border-amber-600 rounded-lg p-6 bg-gradient-to-br from-amber-50 to-amber-100">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <p className="text-xs text-muted-foreground font-medium">STAFF ID CARD</p>
-                        <p className="text-lg font-bold text-amber-700">STAFF-2024-001</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground">Valid Till</p>
-                        <p className="font-semibold">31-12-2025</p>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-4 mb-4 pb-4 border-b">
-                      <Avatar className="h-20 w-20 border-4 border-white shadow">
-                        <AvatarFallback className="text-lg">RS</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <p className="font-bold text-foreground">Rajesh Kumar Singh</p>
-                        <p className="text-sm text-muted-foreground">Physics Department</p>
-                        <p className="text-sm text-muted-foreground">Senior Teacher</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Joining Date</p>
-                        <p className="font-medium">15-07-2015</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Qualification</p>
-                        <p className="font-medium">M.Sc, B.Ed</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Marksheet */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
-                  Marksheet Template
-                </CardTitle>
-                <CardDescription>Exam results and academic performance</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b-2 border-primary">
-                        <th className="text-left py-2 font-semibold">Subject</th>
-                        <th className="text-center py-2 font-semibold">Max Marks</th>
-                        <th className="text-center py-2 font-semibold">Obtained</th>
-                        <th className="text-center py-2 font-semibold">Percentage</th>
-                        <th className="text-center py-2 font-semibold">Grade</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { subject: 'Physics', max: 100, obtained: 92, grade: 'A+' },
-                        { subject: 'Chemistry', max: 100, obtained: 88, grade: 'A' },
-                        { subject: 'Mathematics', max: 100, obtained: 95, grade: 'A+' },
-                        { subject: 'English', max: 100, obtained: 85, grade: 'A' },
-                        { subject: 'Computer Science', max: 100, obtained: 98, grade: 'A+' },
-                      ].map((mark) => (
-                        <tr key={mark.subject} className="border-b hover:bg-secondary/50">
-                          <td className="py-3 font-medium">{mark.subject}</td>
-                          <td className="text-center py-3">{mark.max}</td>
-                          <td className="text-center py-3 font-semibold">{mark.obtained}</td>
-                          <td className="text-center py-3">{((mark.obtained / mark.max) * 100).toFixed(1)}%</td>
-                          <td className="text-center py-3">
-                            <Badge variant="success">{mark.grade}</Badge>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Student Profile Tab */}
-          <TabsContent value="profile" className="space-y-6 mt-6">
-            {/* Profile Header */}
-            <Card className="border-2">
-              <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100 pb-4">
-                <div className="flex items-start gap-4">
-                  <Avatar className="h-24 w-24 border-4 border-white shadow-lg">
-                    <AvatarFallback className="text-2xl font-bold">AK</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 pt-2">
-                    <CardTitle className="text-2xl">{studentData.personalInfo.name}</CardTitle>
-                    <CardDescription className="text-base">Student ID: SCH-2024-12001</CardDescription>
-                    <div className="flex gap-2 mt-3">
-                      <Badge variant="success">Active</Badge>
-                      <Badge variant="info">Class 12-A</Badge>
-                      <Badge variant="default">Science</Badge>
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-6 space-y-6">
-                {/* Personal Information */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <Users className="w-5 h-5" />
-                    Personal Information
-                  </h3>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Object.entries(studentData.personalInfo).map(([key, value]) => (
-                      <div key={key} className="bg-secondary/50 p-3 rounded-lg">
-                        <p className="text-xs text-muted-foreground font-medium capitalize">
-                          {key.replace(/([A-Z])/g, ' $1').trim()}
-                        </p>
-                        <p className="font-semibold text-foreground">{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Academic Information */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <BookOpen className="w-5 h-5" />
-                    Academic Information
-                  </h3>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Object.entries(studentData.academicInfo).map(([key, value]) => (
-                      <div key={key} className="bg-secondary/50 p-3 rounded-lg">
-                        <p className="text-xs text-muted-foreground font-medium capitalize">
-                          {key.replace(/([A-Z])/g, ' $1').trim()}
-                        </p>
-                        <p className="font-semibold text-foreground">{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Parent Information */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <Users className="w-5 h-5" />
-                    Parent Information
-                  </h3>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="border rounded-lg p-4 space-y-3">
-                      <p className="font-semibold flex items-center gap-2">
-                        <Users className="w-4 h-4" />
-                        Father Details
-                      </p>
-                      {Object.entries(studentData.parentInfo)
-                        .slice(0, 5)
-                        .map(([key, value]) => (
-                          <div key={key}>
-                            <p className="text-xs text-muted-foreground font-medium capitalize">
-                              {key.replace(/([A-Z])/g, ' $1').trim()}
-                            </p>
-                            <p className="font-medium text-foreground">{value}</p>
-                          </div>
-                        ))}
-                    </div>
-                    <div className="border rounded-lg p-4 space-y-3">
-                      <p className="font-semibold flex items-center gap-2">
-                        <Users className="w-4 h-4" />
-                        Mother Details
-                      </p>
-                      {Object.entries(studentData.parentInfo)
-                        .slice(5, 10)
-                        .map(([key, value]) => (
-                          <div key={key}>
-                            <p className="text-xs text-muted-foreground font-medium capitalize">
-                              {key.replace(/([A-Z])/g, ' $1').trim()}
-                            </p>
-                            <p className="font-medium text-foreground">{value}</p>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Contact Information */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <Calendar className="w-5 h-5" />
-                    Contact Information
-                  </h3>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Object.entries(studentData.contactInfo).map(([key, value]) => (
-                      <div key={key} className="bg-secondary/50 p-3 rounded-lg">
-                        <p className="text-xs text-muted-foreground font-medium capitalize">
-                          {key.replace(/([A-Z])/g, ' $1').trim()}
-                        </p>
-                        <p className="font-semibold text-foreground text-sm">{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Bank Information */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <FileText className="w-5 h-5" />
-                    Bank Information
-                  </h3>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {Object.entries(studentData.bankInfo).map(([key, value]) => (
-                      <div key={key} className="bg-secondary/50 p-3 rounded-lg">
-                        <p className="text-xs text-muted-foreground font-medium capitalize">
-                          {key.replace(/([A-Z])/g, ' $1').trim()}
-                        </p>
-                        <p className="font-semibold text-foreground">{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Other Information */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <Award className="w-5 h-5" />
-                    Other Information
-                  </h3>
-                  <div className="grid md:grid-cols-3 gap-4">
-                    {Object.entries(studentData.otherInfo).map(([key, value]) => (
-                      <div key={key} className="bg-secondary/50 p-3 rounded-lg">
-                        <p className="text-xs text-muted-foreground font-medium capitalize">
-                          {key.replace(/([A-Z])/g, ' $1').trim()}
-                        </p>
-                        <p className="font-semibold text-foreground">{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-3 pt-6 border-t">
-                  <Button className="flex-1">
-                    <Download className="w-4 h-4 mr-2" />
-                    Download Profile
-                  </Button>
-                  <Button variant="outline" className="flex-1">
-                    <Eye className="w-4 h-4 mr-2" />
-                    Print Card
-                  </Button>
-                  <Button variant="outline" className="flex-1">
-                    Edit Profile
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Forms & States Tab */}
-          <TabsContent value="forms" className="space-y-6 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Form Input States</CardTitle>
-                <CardDescription>All input field variations with validation states</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Default State */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Full Name</label>
-                  <Input placeholder="Enter your full name" className="w-full" />
-                  <p className="text-xs text-muted-foreground">Helper text for guidance</p>
-                </div>
-
-                {/* Success State */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Email Address</label>
-                  <div className="flex items-center gap-2">
-                    <Input value="student@example.com" className="w-full border-green-500 bg-green-50" readOnly />
-                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  </div>
-                  <p className="text-xs text-green-600 font-medium">Email verified successfully</p>
-                </div>
-
-                {/* Error State */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Phone Number</label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      value="123"
-                      placeholder="Enter phone number"
-                      className="w-full border-red-500 bg-red-50"
-                    />
-                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                  </div>
-                  <p className="text-xs text-red-600 font-medium">Phone number is invalid</p>
-                </div>
-
-                {/* Warning State */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Admission Date</label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      value="01-04-2023"
-                      placeholder="Select date"
-                      className="w-full border-amber-500 bg-amber-50"
-                    />
-                    <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                  </div>
-                  <p className="text-xs text-amber-600 font-medium">This date is in the past</p>
-                </div>
-
-                {/* Disabled State */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Student ID</label>
-                  <Input value="SCH-2024-12001" disabled className="w-full" />
-                  <p className="text-xs text-muted-foreground">This field cannot be edited</p>
-                </div>
-
-                {/* Textarea */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Additional Notes</label>
-                  <Textarea placeholder="Enter any additional information here..." />
-                  <p className="text-xs text-muted-foreground">Maximum 500 characters</p>
-                </div>
-
-                {/* Select Dropdown */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Class Selection</label>
-                  <select className="w-full px-3 py-2 border border-input rounded-md bg-background">
-                    <option>Select your class</option>
-                    <option>Class 10-A</option>
-                    <option>Class 12-A</option>
-                    <option>Class 12-B</option>
-                  </select>
-                  <p className="text-xs text-muted-foreground">Choose from available classes</p>
-                </div>
-
-                {/* Checkboxes */}
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-foreground">Preferences</label>
-                  <div className="flex items-center gap-2">
-                    <Checkbox id="terms" />
-                    <label htmlFor="terms" className="text-sm cursor-pointer">
-                      I agree to the terms and conditions
-                    </label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox id="newsletter" defaultChecked />
-                    <label htmlFor="newsletter" className="text-sm cursor-pointer">
-                      Subscribe to newsletters
-                    </label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Checkbox id="notifications" disabled />
-                    <label htmlFor="notifications" className="text-sm cursor-pointer opacity-50">
-                      Receive notifications (disabled)
-                    </label>
-                  </div>
-                </div>
-
-                {/* Form Actions */}
-                <div className="flex gap-3 pt-6 border-t">
-                  <Button className="flex-1">Submit</Button>
-                  <Button variant="outline" className="flex-1">
-                    Cancel
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        {/* FOOTER */}
+        <div className="text-center text-sm text-muted-foreground py-8 border-t">
+          <p>GradGrid Design System © 2024 - All components demonstrated on this page</p>
+        </div>
       </div>
     </div>
   )
