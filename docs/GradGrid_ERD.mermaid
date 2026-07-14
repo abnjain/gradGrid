@@ -1,0 +1,892 @@
+erDiagram
+
+%% ─────────────────────────────────────────────
+%% PLATFORM LAYER
+%% ─────────────────────────────────────────────
+
+    ORGANIZATIONS {
+        uuid id PK
+        string name
+        string type
+        string contact_email
+        string contact_phone
+        string address
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    INSTITUTIONS {
+        uuid id PK
+        uuid organization_id FK
+        string name
+        string type
+        string contact_email
+        string contact_phone
+        string address
+        string logo_file_id
+        string primary_color
+        string secondary_color
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    ACADEMIC_SESSIONS {
+        uuid id PK
+        uuid institution_id FK
+        string name
+        date start_date
+        date end_date
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+
+%% ─────────────────────────────────────────────
+%% IDENTITY & AUTH
+%% ─────────────────────────────────────────────
+
+    USERS {
+        uuid id PK
+        uuid institution_id FK "null for platform users"
+        string first_name
+        string last_name
+        string email
+        string phone
+        string avatar_file_id
+        string user_type
+        boolean is_active
+        boolean email_verified
+        timestamp last_login_at
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    USER_PASSWORDS {
+        uuid id PK
+        uuid user_id FK
+        string password_hash
+        timestamp created_at
+    }
+
+    REFRESH_TOKENS {
+        uuid id PK
+        uuid user_id FK
+        string token_hash
+        string family
+        boolean is_revoked
+        timestamp expires_at
+        string ip_address
+        string user_agent
+        timestamp created_at
+    }
+
+    USER_SESSIONS {
+        uuid id PK
+        uuid user_id FK
+        string ip_address
+        string user_agent
+        string device_label
+        timestamp last_active_at
+        timestamp expires_at
+        timestamp created_at
+    }
+
+    EMAIL_VERIFICATIONS {
+        uuid id PK
+        uuid user_id FK
+        string otp_hash
+        timestamp expires_at
+        boolean is_used
+        timestamp created_at
+    }
+
+    PASSWORD_RESETS {
+        uuid id PK
+        uuid user_id FK
+        string token_hash
+        timestamp expires_at
+        boolean is_used
+        timestamp created_at
+    }
+
+%% ─────────────────────────────────────────────
+%% RBAC — Registry only; enforcement in backend
+%% ─────────────────────────────────────────────
+
+    ROLES {
+        uuid id PK
+        uuid institution_id FK "null = platform role"
+        string name
+        string description
+        boolean is_system_role
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    ROLE_ASSIGNMENTS {
+        uuid id PK
+        uuid user_id FK
+        uuid role_id FK
+        uuid institution_id FK
+        uuid assigned_by FK
+        timestamp created_at
+        timestamp deleted_at
+    }
+
+    PERMISSION_REGISTRY {
+        uuid id PK
+        string module
+        string action
+        string key
+        string description
+        boolean is_active
+        timestamp created_at
+    }
+
+    ROLE_PERMISSIONS {
+        uuid id PK
+        uuid role_id FK
+        uuid permission_id FK
+        timestamp created_at
+    }
+
+%% ─────────────────────────────────────────────
+%% PEOPLE — Students
+%% ─────────────────────────────────────────────
+
+    STUDENTS {
+        uuid id PK
+        uuid institution_id FK
+        uuid academic_session_id FK
+        string admission_number
+        string enrollment_number
+        string scholar_number
+        string roll_number
+        string first_name
+        string last_name
+        date date_of_birth
+        string gender
+        string blood_group
+        string address
+        string city
+        string state
+        string pincode
+        string phone
+        string email
+        string photo_file_id
+        text aadhaar_number_enc "AES-256-GCM encrypted"
+        text aadhaar_iv
+        text apaar_id_enc "AES-256-GCM encrypted"
+        text apaar_iv
+        text samagra_id_enc "AES-256-GCM encrypted"
+        text samagra_iv
+        string status
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    PARENTS {
+        uuid id PK
+        uuid institution_id FK
+        string first_name
+        string last_name
+        string relation
+        string phone
+        string email
+        string occupation
+        string address
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    STUDENT_PARENT_LINKS {
+        uuid id PK
+        uuid student_id FK
+        uuid parent_id FK
+        boolean is_primary
+        timestamp created_at
+    }
+
+%% ─────────────────────────────────────────────
+%% PEOPLE — Staff / Teachers
+%% ─────────────────────────────────────────────
+
+    STAFF {
+        uuid id PK
+        uuid institution_id FK
+        uuid user_id FK "null until platform access granted"
+        uuid department_id FK
+        string employee_code
+        string first_name
+        string last_name
+        date date_of_birth
+        string gender
+        string phone
+        string email
+        string address
+        string designation
+        string qualification
+        string experience_years
+        string photo_file_id
+        text aadhaar_number_enc "AES-256-GCM encrypted"
+        text aadhaar_iv
+        text pan_number_enc "AES-256-GCM encrypted"
+        text pan_iv
+        text driving_licence_enc "AES-256-GCM encrypted"
+        text driving_licence_iv
+        string bank_account_enc
+        string bank_ifsc
+        string bank_name
+        string employment_status
+        date joining_date
+        date leaving_date
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+%% ─────────────────────────────────────────────
+%% ACADEMIC STRUCTURE
+%% ─────────────────────────────────────────────
+
+    DEPARTMENTS {
+        uuid id PK
+        uuid institution_id FK
+        string name
+        string description
+        uuid head_staff_id FK
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    HOUSES {
+        uuid id PK
+        uuid institution_id FK
+        string name
+        string color
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    CLASSES {
+        uuid id PK
+        uuid institution_id FK
+        uuid academic_session_id FK
+        string name
+        integer sort_order
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    SECTIONS {
+        uuid id PK
+        uuid class_id FK
+        uuid institution_id FK
+        string name
+        uuid class_teacher_id FK "staff.id"
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    SUBJECTS {
+        uuid id PK
+        uuid institution_id FK
+        uuid department_id FK
+        string name
+        string code
+        string type
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    SECTION_SUBJECT_ASSIGNMENTS {
+        uuid id PK
+        uuid institution_id FK
+        uuid section_id FK
+        uuid subject_id FK
+        uuid teacher_id FK "staff.id"
+        timestamp created_at
+    }
+
+    STUDENT_SECTION_ENROLLMENTS {
+        uuid id PK
+        uuid institution_id FK
+        uuid section_id FK
+        uuid student_id FK
+        uuid academic_session_id FK
+        date enrolled_at
+        date left_at
+        timestamp created_at
+    }
+
+%% ─────────────────────────────────────────────
+%% ADMISSIONS
+%% ─────────────────────────────────────────────
+
+    ADMISSION_ENQUIRIES {
+        uuid id PK
+        uuid institution_id FK
+        uuid academic_session_id FK
+        string source "walk_in | phone | online(future)"
+        string student_first_name
+        string student_last_name
+        date date_of_birth
+        string applying_for_class
+        string parent_name
+        string parent_phone
+        string parent_email
+        string status
+        uuid assigned_to FK "staff.id"
+        uuid converted_student_id FK
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    ADMISSION_ENQUIRY_STATUS_LOGS {
+        uuid id PK
+        uuid enquiry_id FK
+        string from_status
+        string to_status
+        uuid changed_by FK
+        text reason
+        timestamp created_at
+    }
+
+    ADMISSION_ENQUIRY_NOTES {
+        uuid id PK
+        uuid enquiry_id FK
+        text note
+        uuid noted_by FK
+        timestamp created_at
+    }
+
+    ADMISSION_ENQUIRY_DOCUMENTS {
+        uuid id PK
+        uuid enquiry_id FK
+        uuid file_id FK
+        string document_type
+        uuid uploaded_by FK
+        timestamp created_at
+    }
+
+%% ─────────────────────────────────────────────
+%% ATTENDANCE
+%% ─────────────────────────────────────────────
+
+    ATTENDANCE_SESSIONS {
+        uuid id PK
+        uuid institution_id FK
+        uuid section_id FK
+        uuid academic_session_id FK
+        date attendance_date
+        uuid marked_by FK "staff.id"
+        string status
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    STUDENT_ATTENDANCE_RECORDS {
+        uuid id PK
+        uuid attendance_session_id FK
+        uuid student_id FK
+        string status
+        text remark
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    TEACHER_ATTENDANCE_RECORDS {
+        uuid id PK
+        uuid institution_id FK
+        uuid staff_id FK
+        date attendance_date
+        string status
+        text remark
+        uuid marked_by FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+%% ─────────────────────────────────────────────
+%% EXAMINATION
+%% ─────────────────────────────────────────────
+
+    EXAM_TYPES {
+        uuid id PK
+        uuid institution_id FK
+        string name
+        string description
+        integer sort_order
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    EXAMS {
+        uuid id PK
+        uuid institution_id FK
+        uuid academic_session_id FK
+        uuid exam_type_id FK
+        string name
+        date start_date
+        date end_date
+        string status
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    EXAM_SUBJECTS {
+        uuid id PK
+        uuid exam_id FK
+        uuid subject_id FK
+        uuid class_id FK
+        integer max_marks
+        integer passing_marks
+        date exam_date
+        string marks_entry_status
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    MARKS {
+        uuid id PK
+        uuid exam_subject_id FK
+        uuid student_id FK
+        numeric marks_obtained
+        string grade
+        boolean is_absent
+        boolean is_exempted
+        text remarks
+        uuid entered_by FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    GRADE_RULES {
+        uuid id PK
+        uuid institution_id FK
+        string name
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    GRADE_RULE_ITEMS {
+        uuid id PK
+        uuid grade_rule_id FK
+        string grade
+        string description
+        numeric min_percentage
+        numeric max_percentage
+        string color
+        timestamp created_at
+    }
+
+%% ─────────────────────────────────────────────
+%% FINANCE
+%% ─────────────────────────────────────────────
+
+    FEE_STRUCTURES {
+        uuid id PK
+        uuid institution_id FK
+        uuid academic_session_id FK
+        uuid class_id FK
+        string name
+        string description
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    FEE_STRUCTURE_ITEMS {
+        uuid id PK
+        uuid fee_structure_id FK
+        string label
+        numeric amount
+        integer installment_number
+        date due_date
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    STUDENT_FEE_ASSIGNMENTS {
+        uuid id PK
+        uuid student_id FK
+        uuid fee_structure_id FK
+        uuid academic_session_id FK
+        timestamp created_at
+    }
+
+    FEE_DISCOUNTS {
+        uuid id PK
+        uuid institution_id FK
+        string name
+        string type
+        numeric value
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    STUDENT_FEE_DISCOUNTS {
+        uuid id PK
+        uuid student_id FK
+        uuid fee_discount_id FK
+        uuid fee_structure_item_id FK
+        numeric applied_amount
+        uuid applied_by FK
+        text reason
+        timestamp created_at
+    }
+
+    FEE_PAYMENTS {
+        uuid id PK
+        uuid institution_id FK
+        uuid student_id FK
+        uuid fee_structure_item_id FK
+        uuid academic_session_id FK
+        string receipt_number
+        numeric amount_paid
+        date payment_date
+        string payment_mode
+        string reference_number
+        text notes
+        uuid collected_by FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    SALARY_RECORDS {
+        uuid id PK
+        uuid institution_id FK
+        uuid staff_id FK
+        uuid academic_session_id FK
+        integer month
+        integer year
+        numeric gross_salary
+        numeric deductions
+        numeric net_salary
+        string status
+        date disbursement_date
+        string payment_mode
+        uuid processed_by FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+%% ─────────────────────────────────────────────
+%% LIBRARY
+%% ─────────────────────────────────────────────
+
+    BOOKS {
+        uuid id PK
+        uuid institution_id FK
+        string title
+        string author
+        string isbn
+        string publisher
+        integer publication_year
+        string subject
+        string category
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    BOOK_COPIES {
+        uuid id PK
+        uuid book_id FK
+        string accession_number
+        string condition
+        string status
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    LIBRARY_CARDS {
+        uuid id PK
+        uuid institution_id FK
+        string card_number
+        string member_type
+        uuid student_id FK "nullable"
+        uuid staff_id FK "nullable"
+        boolean is_active
+        date issued_date
+        date expiry_date
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    BOOK_ISSUES {
+        uuid id PK
+        uuid book_copy_id FK
+        uuid library_card_id FK
+        uuid issued_by FK
+        date issue_date
+        date due_date
+        date return_date
+        numeric fine_amount
+        boolean fine_paid
+        timestamp created_at
+        timestamp updated_at
+    }
+
+%% ─────────────────────────────────────────────
+%% COMMUNICATION
+%% ─────────────────────────────────────────────
+
+    MESSAGE_TEMPLATES {
+        uuid id PK
+        uuid institution_id FK
+        string name
+        string channel
+        string subject
+        text body
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    MESSAGES {
+        uuid id PK
+        uuid institution_id FK
+        uuid template_id FK
+        string channel
+        string subject
+        text body
+        string recipient_group
+        uuid sent_by FK
+        string status
+        timestamp scheduled_at
+        timestamp sent_at
+        timestamp created_at
+    }
+
+    MESSAGE_RECIPIENTS {
+        uuid id PK
+        uuid message_id FK
+        string recipient_type
+        uuid recipient_id
+        string phone_or_email
+        string delivery_status
+        timestamp delivered_at
+        timestamp created_at
+    }
+
+%% ─────────────────────────────────────────────
+%% DOCUMENT TEMPLATES & GENERATED DOCS
+%% ─────────────────────────────────────────────
+
+    DOCUMENT_TEMPLATES {
+        uuid id PK
+        uuid institution_id FK
+        string type
+        string name
+        jsonb config
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at
+    }
+
+    GENERATED_DOCUMENTS {
+        uuid id PK
+        uuid institution_id FK
+        uuid template_id FK
+        string entity_type
+        uuid entity_id
+        uuid file_id FK
+        uuid generated_by FK
+        timestamp created_at
+    }
+
+%% ─────────────────────────────────────────────
+%% FILE STORAGE (abstraction layer)
+%% ─────────────────────────────────────────────
+
+    FILE_UPLOADS {
+        uuid id PK
+        uuid institution_id FK
+        uuid uploaded_by FK
+        string original_name
+        string storage_key
+        string bucket
+        string mime_type
+        bigint size_bytes
+        string entity_type
+        uuid entity_id
+        timestamp created_at
+    }
+
+%% ─────────────────────────────────────────────
+%% AUDIT LOGS
+%% ─────────────────────────────────────────────
+
+    AUDIT_LOGS {
+        uuid id PK
+        uuid institution_id FK
+        uuid user_id FK
+        string role_name
+        string module
+        string action
+        string entity_type
+        uuid entity_id
+        jsonb before_state
+        jsonb after_state
+        string ip_address
+        string user_agent
+        text reason
+        timestamp created_at
+    }
+
+    PLATFORM_AUDIT_LOGS {
+        uuid id PK
+        uuid user_id FK
+        string role_name
+        string module
+        string action
+        string entity_type
+        uuid entity_id
+        jsonb before_state
+        jsonb after_state
+        string ip_address
+        string user_agent
+        timestamp created_at
+    }
+
+%% ─────────────────────────────────────────────
+%% NOTIFICATIONS
+%% ─────────────────────────────────────────────
+
+    NOTIFICATIONS {
+        uuid id PK
+        uuid user_id FK
+        uuid institution_id FK
+        string type
+        string title
+        text body
+        string link
+        boolean is_read
+        timestamp read_at
+        timestamp created_at
+    }
+
+%% ═══════════════════════════════════════════════
+%% RELATIONSHIPS
+%% ═══════════════════════════════════════════════
+
+    ORGANIZATIONS ||--o{ INSTITUTIONS : "has"
+    INSTITUTIONS ||--o{ ACADEMIC_SESSIONS : "has"
+    INSTITUTIONS ||--o{ USERS : "has"
+    INSTITUTIONS ||--o{ STUDENTS : "has"
+    INSTITUTIONS ||--o{ PARENTS : "has"
+    INSTITUTIONS ||--o{ STAFF : "has"
+    INSTITUTIONS ||--o{ DEPARTMENTS : "has"
+    INSTITUTIONS ||--o{ HOUSES : "has"
+    INSTITUTIONS ||--o{ CLASSES : "has"
+    INSTITUTIONS ||--o{ SUBJECTS : "has"
+    INSTITUTIONS ||--o{ ROLES : "defines custom"
+    INSTITUTIONS ||--o{ ADMISSION_ENQUIRIES : "receives"
+    INSTITUTIONS ||--o{ ATTENDANCE_SESSIONS : "tracks"
+    INSTITUTIONS ||--o{ EXAMS : "conducts"
+    INSTITUTIONS ||--o{ FEE_STRUCTURES : "defines"
+    INSTITUTIONS ||--o{ FEE_PAYMENTS : "records"
+    INSTITUTIONS ||--o{ SALARY_RECORDS : "manages"
+    INSTITUTIONS ||--o{ BOOKS : "owns"
+    INSTITUTIONS ||--o{ LIBRARY_CARDS : "issues"
+    INSTITUTIONS ||--o{ MESSAGE_TEMPLATES : "creates"
+    INSTITUTIONS ||--o{ MESSAGES : "sends"
+    INSTITUTIONS ||--o{ DOCUMENT_TEMPLATES : "configures"
+    INSTITUTIONS ||--o{ AUDIT_LOGS : "generates"
+    INSTITUTIONS ||--o{ FILE_UPLOADS : "stores"
+
+    USERS ||--o{ REFRESH_TOKENS : "has"
+    USERS ||--o{ USER_SESSIONS : "has"
+    USERS ||--|| USER_PASSWORDS : "has"
+    USERS ||--o{ EMAIL_VERIFICATIONS : "has"
+    USERS ||--o{ PASSWORD_RESETS : "requests"
+    USERS ||--o{ ROLE_ASSIGNMENTS : "receives"
+    USERS ||--o{ NOTIFICATIONS : "receives"
+    USERS ||--o| STAFF : "linked to"
+
+    ROLES ||--o{ ROLE_ASSIGNMENTS : "assigned via"
+    ROLES ||--o{ ROLE_PERMISSIONS : "grants"
+    PERMISSION_REGISTRY ||--o{ ROLE_PERMISSIONS : "registered in"
+
+    ACADEMIC_SESSIONS ||--o{ CLASSES : "has"
+    ACADEMIC_SESSIONS ||--o{ STUDENTS : "enrolls"
+    ACADEMIC_SESSIONS ||--o{ STUDENT_SECTION_ENROLLMENTS : "tracks"
+    ACADEMIC_SESSIONS ||--o{ EXAMS : "contains"
+    ACADEMIC_SESSIONS ||--o{ FEE_STRUCTURES : "defines"
+
+    CLASSES ||--o{ SECTIONS : "divided into"
+    SECTIONS ||--o{ SECTION_SUBJECT_ASSIGNMENTS : "teaches"
+    SECTIONS ||--o{ STUDENT_SECTION_ENROLLMENTS : "enrolls"
+    SECTIONS ||--o{ ATTENDANCE_SESSIONS : "tracks"
+    SUBJECTS ||--o{ SECTION_SUBJECT_ASSIGNMENTS : "assigned to"
+    STAFF ||--o{ SECTION_SUBJECT_ASSIGNMENTS : "teaches"
+    STAFF ||--o{ DEPARTMENTS : "heads"
+    DEPARTMENTS ||--o{ STAFF : "has"
+    DEPARTMENTS ||--o{ SUBJECTS : "owns"
+
+    STUDENTS ||--o{ STUDENT_PARENT_LINKS : "linked"
+    PARENTS ||--o{ STUDENT_PARENT_LINKS : "linked"
+    STUDENTS ||--o{ STUDENT_SECTION_ENROLLMENTS : "enrolled in"
+    STUDENTS ||--o{ STUDENT_ATTENDANCE_RECORDS : "tracked"
+    STUDENTS ||--o{ MARKS : "receives"
+    STUDENTS ||--o{ STUDENT_FEE_ASSIGNMENTS : "assigned"
+    STUDENTS ||--o{ STUDENT_FEE_DISCOUNTS : "receives"
+    STUDENTS ||--o{ FEE_PAYMENTS : "makes"
+    STUDENTS ||--o{ LIBRARY_CARDS : "holds"
+
+    STAFF ||--o{ TEACHER_ATTENDANCE_RECORDS : "tracked"
+    STAFF ||--o{ SALARY_RECORDS : "receives"
+    STAFF ||--o{ LIBRARY_CARDS : "holds"
+    STAFF ||--o{ ATTENDANCE_SESSIONS : "marks"
+
+    ADMISSION_ENQUIRIES ||--o{ ADMISSION_ENQUIRY_STATUS_LOGS : "tracks transitions"
+    ADMISSION_ENQUIRIES ||--o{ ADMISSION_ENQUIRY_NOTES : "has"
+    ADMISSION_ENQUIRIES ||--o{ ADMISSION_ENQUIRY_DOCUMENTS : "has"
+    ADMISSION_ENQUIRIES }o--o| STUDENTS : "converts to"
+
+    ATTENDANCE_SESSIONS ||--o{ STUDENT_ATTENDANCE_RECORDS : "contains"
+
+    EXAMS ||--o{ EXAM_SUBJECTS : "covers"
+    EXAM_TYPES ||--o{ EXAMS : "classifies"
+    EXAM_SUBJECTS ||--o{ MARKS : "contains"
+    GRADE_RULES ||--o{ GRADE_RULE_ITEMS : "defines"
+
+    FEE_STRUCTURES ||--o{ FEE_STRUCTURE_ITEMS : "contains"
+    FEE_STRUCTURES ||--o{ STUDENT_FEE_ASSIGNMENTS : "assigned via"
+    FEE_STRUCTURE_ITEMS ||--o{ STUDENT_FEE_DISCOUNTS : "discounted"
+    FEE_STRUCTURE_ITEMS ||--o{ FEE_PAYMENTS : "paid against"
+    FEE_DISCOUNTS ||--o{ STUDENT_FEE_DISCOUNTS : "applied via"
+
+    BOOKS ||--o{ BOOK_COPIES : "has"
+    BOOK_COPIES ||--o{ BOOK_ISSUES : "issued via"
+    LIBRARY_CARDS ||--o{ BOOK_ISSUES : "uses"
+
+    MESSAGE_TEMPLATES ||--o{ MESSAGES : "used by"
+    MESSAGES ||--o{ MESSAGE_RECIPIENTS : "sent to"
+
+    DOCUMENT_TEMPLATES ||--o{ GENERATED_DOCUMENTS : "generates"
