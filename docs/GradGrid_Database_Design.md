@@ -12,6 +12,7 @@
 | Version | Date | Description | Author |
 |---|---|---|---|
 | 1.0 | 2026-07-13 | Initial Database Design derived from PRD, Domain Model, and RBAC Matrix | Architecture Team |
+| 1.1 | 2026-07-16 | Extended students table with family, previous school, RTE, scholarship, and bank fields; enriched parents table | Architecture Team |
 
 ---
 
@@ -585,32 +586,68 @@ CREATE TABLE students (
     id                      UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     institution_id          UUID            NOT NULL REFERENCES institutions(id),
     academic_session_id     UUID            NOT NULL REFERENCES academic_sessions(id),
+    -- Identity
+    first_name              VARCHAR(100)    NOT NULL,
+    last_name               VARCHAR(100)    NOT NULL,
+    date_of_birth           DATE            NULL,
+    gender                  VARCHAR(10)     NULL,       -- male | female | other
+    blood_group             VARCHAR(5)      NULL,
+    religion                VARCHAR(50)     NULL,
+    caste                   VARCHAR(50)     NULL,
+    category                VARCHAR(30)     NULL,       -- general | obc | sc | st | ews | other
+    handicapped             BOOLEAN         NOT NULL DEFAULT FALSE,
+    photo_file_id           UUID            NULL REFERENCES file_uploads(id),
+    -- Enrollment identifiers
     admission_number        VARCHAR(50)     NOT NULL,
     enrollment_number       VARCHAR(50)     NULL,
     scholar_number          VARCHAR(50)     NULL,
     roll_number             VARCHAR(20)     NULL,
-    first_name              VARCHAR(100)    NOT NULL,
-    last_name               VARCHAR(100)    NOT NULL,
-    date_of_birth           DATE            NULL,
-    gender                  VARCHAR(10)     NULL,   -- male | female | other
-    blood_group             VARCHAR(5)      NULL,
+    student_type            VARCHAR(20)     NULL,       -- new | old
+    date_of_admission       DATE            NULL,
+    -- Academic placement
+    class_id                UUID            NULL REFERENCES classes(id),
+    section_id              UUID            NULL REFERENCES sections(id),
+    stream                  VARCHAR(50)     NULL,       -- science | commerce | arts | vocational | NULL
+    medium                  VARCHAR(30)     NULL,       -- hindi | english | urdu | bilingual
+    house_id                UUID            NULL REFERENCES houses(id),
+    route                   VARCHAR(100)    NULL,
+    stoppage_landmark       VARCHAR(200)    NULL,
+    -- Contact
+    phone                   VARCHAR(20)     NULL,
+    alternate_phone         VARCHAR(20)     NULL,
+    email                   VARCHAR(255)    NULL,
+    -- Address (current)
     address                 TEXT            NULL,
     city                    VARCHAR(100)    NULL,
+    district                VARCHAR(100)    NULL,
     state                   VARCHAR(100)    NULL,
     pincode                 VARCHAR(10)     NULL,
-    phone                   VARCHAR(20)     NULL,
-    email                   VARCHAR(255)    NULL,
-    photo_file_id           UUID            NULL REFERENCES file_uploads(id),
-    -- Encrypted sensitive fields
+    -- Previous school
+    prev_school_name        VARCHAR(255)    NULL,
+    prev_school_city        VARCHAR(100)    NULL,
+    last_class              VARCHAR(50)     NULL,
+    last_result             VARCHAR(20)     NULL,       -- passed | failed | promoted | n/a
+    -- Encrypted sensitive identity fields (AES-256-GCM)
     aadhaar_number_enc      TEXT            NULL,
     aadhaar_number_iv       TEXT            NULL,
+    samagra_child_id_enc    TEXT            NULL,        -- Samagra Child ID (MP)
+    samagra_child_id_iv     TEXT            NULL,
+    samagra_family_id_enc   TEXT            NULL,        -- Samagra Family ID (MP)
+    samagra_family_id_iv    TEXT            NULL,
     apaar_id_enc            TEXT            NULL,
     apaar_id_iv             TEXT            NULL,
-    samagra_id_enc          TEXT            NULL,
-    samagra_id_iv           TEXT            NULL,
+    -- RTE (Right to Education — MP specific)
+    is_rte                  BOOLEAN         NOT NULL DEFAULT FALSE,
+    -- Bank details (for scholarship disbursement)
+    bank_name               VARCHAR(100)    NULL,
+    bank_account_enc        TEXT            NULL,
+    bank_account_iv         TEXT            NULL,
+    bank_ifsc               VARCHAR(20)     NULL,
+    account_holder_name     VARCHAR(150)    NULL,
+    scholarship_name        VARCHAR(200)    NULL,
+    admitted_class          VARCHAR(50)     NULL,       -- class in which admitted under RTE
     -- Status
     status                  VARCHAR(20)     NOT NULL DEFAULT 'active',  -- active | archived | transferred
-    house_id                UUID            NULL REFERENCES houses(id),
     created_at              TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
     updated_at              TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
     deleted_at              TIMESTAMPTZ     NULL,
@@ -625,25 +662,39 @@ CREATE INDEX idx_students_institution_id ON students(institution_id) WHERE delet
 CREATE INDEX idx_students_academic_session_id ON students(academic_session_id) WHERE deleted_at IS NULL;
 CREATE INDEX idx_students_status ON students(institution_id, status) WHERE deleted_at IS NULL;
 CREATE INDEX idx_students_name ON students(institution_id, last_name, first_name) WHERE deleted_at IS NULL;
+CREATE INDEX idx_students_category ON students(institution_id, category) WHERE deleted_at IS NULL;
+CREATE INDEX idx_students_is_rte ON students(institution_id, is_rte) WHERE deleted_at IS NULL;
 ```
 
 ---
 
 ### `parents`
 
-Parent or guardian records. Linked to students via junction table. No login in MVP.
+Parent or guardian records. Linked to students via junction table. Stores complete family information including both father's and mother's details. No login in MVP.
 
 ```sql
 CREATE TABLE parents (
     id                  UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     institution_id      UUID            NOT NULL REFERENCES institutions(id),
+    -- Primary contact (defaults to father / first guardian)
     first_name          VARCHAR(100)    NOT NULL,
     last_name           VARCHAR(100)    NOT NULL,
     relation            VARCHAR(30)     NOT NULL,   -- father | mother | guardian | other
-    phone               VARCHAR(20)     NOT NULL,
-    email               VARCHAR(255)    NULL,
+    date_of_birth       DATE            NULL,
+    qualification       VARCHAR(100)    NULL,
     occupation          VARCHAR(100)    NULL,
+    phone               VARCHAR(20)     NOT NULL,
+    alternate_phone     VARCHAR(20)     NULL,
+    email               VARCHAR(255)    NULL,
     address             TEXT            NULL,
+    -- Spouse / other parent details (stored on same record for convenience)
+    spouse_name         VARCHAR(200)    NULL,
+    spouse_dob          DATE            NULL,
+    spouse_qualification VARCHAR(100)   NULL,
+    spouse_occupation   VARCHAR(100)    NULL,
+    spouse_phone        VARCHAR(20)     NULL,
+    -- Family
+    date_of_anniversary DATE            NULL,
     created_at          TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
     updated_at          TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
     deleted_at          TIMESTAMPTZ     NULL
@@ -1696,7 +1747,7 @@ All indexes on soft-deletable tables include a `WHERE deleted_at IS NULL` partia
 
 | Table | Encrypted Fields | IV Columns |
 |---|---|---|
-| `students` | `aadhaar_number_enc`, `apaar_id_enc`, `samagra_id_enc` | `*_iv` per field |
+| `students` | `aadhaar_number_enc`, `samagra_child_id_enc`, `samagra_family_id_enc`, `apaar_id_enc`, `bank_account_enc` | `*_iv` per field |
 | `staff` | `aadhaar_number_enc`, `pan_number_enc`, `driving_licence_enc`, `bank_account_enc` | `*_iv` per field |
 
 **Rules:**
