@@ -101,6 +101,7 @@ export interface User {
   email: string;
   role: UserRole;
   avatar?: string;
+  permissions?: string[];
   institutionId?: string;
   institutionName?: string;
   sessionId?: string;

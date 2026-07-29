@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, DM_Sans, IBM_Plex_Mono } from "next/font/google";
+import { AuthProvider } from "@/lib/auth-context";
+import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
 
 const displayFont = Plus_Jakarta_Sans({
@@ -33,7 +35,13 @@ export default function RootLayout({
       lang="en"
       className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        <AuthProvider>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </AuthProvider>
+      </body>
     </html>
   );
 }

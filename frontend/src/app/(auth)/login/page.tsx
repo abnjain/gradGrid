@@ -1,12 +1,48 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/components/ui/toast";
+import { Lock, Eye, EyeOff, ArrowRight, Mail } from "lucide-react";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { login } = useAuth();
+  const { addToast } = useToast();
+
   const [showPassword, setShowPassword] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [form, setForm] = React.useState({ email: "", password: "" });
+  const [errors, setErrors] = React.useState({ email: "", password: "" });
+
+  function validate(): boolean {
+    const next = { email: "", password: "" };
+    if (!form.email.trim()) next.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) next.email = "Invalid email address";
+    if (!form.password) next.password = "Password is required";
+    setErrors(next);
+    return !next.email && !next.password;
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!validate()) return;
+
+    setIsLoading(true);
+    try {
+      await login({ email: form.email, password: form.password });
+      addToast({ variant: "success", title: "Signed in successfully" });
+      router.push("/app");
+    } catch (err: any) {
+      const message = err?.error?.message || err?.message || "Invalid email or password";
+      addToast({ variant: "error", title: "Login failed", description: message });
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-fog flex">
@@ -24,13 +60,16 @@ export default function LoginPage() {
           <h1 className="text-[28px] font-bold font-display text-ink mb-1.5">Welcome back</h1>
           <p className="text-sm text-mid mb-8">Sign in to your institution account</p>
 
-          <form className="flex flex-col gap-4" onSubmit={(e) => e.preventDefault()}>
+          <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             <Input
               label="Email"
               type="email"
               placeholder="you@institution.edu"
               required
-              iconLeft={<Lock className="w-4 h-4" />}
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              error={errors.email}
+              iconLeft={<Mail className="w-4 h-4" />}
             />
             <div className="flex flex-col gap-1">
               <Input
@@ -38,6 +77,9 @@ export default function LoginPage() {
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
                 required
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                error={errors.password}
                 iconLeft={<Lock className="w-4 h-4" />}
                 iconRight={
                   <button type="button" onClick={() => setShowPassword(!showPassword)}>
@@ -52,9 +94,9 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <Button type="submit" size="lg" className="w-full mt-2">
-              Sign In
-              <ArrowRight className="w-4 h-4" />
+            <Button type="submit" size="lg" className="w-full mt-2" loading={isLoading}>
+              {isLoading ? "Signing in…" : "Sign In"}
+              {!isLoading && <ArrowRight className="w-4 h-4" />}
             </Button>
           </form>
 
