@@ -1,7 +1,11 @@
-"use client";
-
+import type { Metadata } from "next";
 import React from "react";
 import { AppShell } from "@/components/layout/app-shell";
+
+export const metadata: Metadata = {
+  title: "Institution Portal | GradGrid",
+  robots: { index: false, follow: false },
+};
 
 export default function InstitutionLayout({ children }: { children: React.ReactNode }) {
   return (

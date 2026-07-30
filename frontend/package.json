@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint:seo": "npx tsc --noEmit && echo '✅ TypeScript OK' && echo 'Run tests: npm test'"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

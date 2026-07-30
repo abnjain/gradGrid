@@ -16,6 +16,7 @@ import examinationRoutes from '../modules/examination/examination.routes';
 import financeRoutes from '../modules/finance/finance.routes';
 import communicationRoutes from '../modules/communication/communication.routes';
 import reportsRoutes from '../modules/reports/reports.routes';
+import seoRoutes from '../modules/seo/seo.routes';
 
 const router = Router();
 
@@ -33,5 +34,6 @@ router.use('/exams', examinationRoutes);
 router.use('/finance', financeRoutes);
 router.use('/communication', communicationRoutes);
 router.use('/reports', reportsRoutes);
+router.use('/seo', seoRoutes);
 
 export default router;

@@ -2,6 +2,13 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, DM_Sans, IBM_Plex_Mono } from "next/font/google";
 import { AuthProvider } from "@/lib/auth-context";
 import { ToastProvider } from "@/components/ui/toast";
+import { JsonLd } from "@/components/seo";
+import {
+  organizationSchema,
+  softwareApplicationSchema,
+  webSiteSchema,
+  siteConfig,
+} from "@/lib/seo";
 import "./globals.css";
 
 const displayFont = Plus_Jakarta_Sans({
@@ -21,8 +28,53 @@ const monoFont = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GradGrid — Education ERP",
-  description: "Comprehensive education management platform",
+  metadataBase: new URL(siteConfig.baseUrl),
+  title: {
+    default: siteConfig.defaultTitle,
+    template: siteConfig.titleTemplate,
+  },
+  description: siteConfig.defaultDescription,
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  openGraph: {
+    type: "website",
+    locale: siteConfig.locale,
+    siteName: siteConfig.name,
+    title: siteConfig.defaultTitle,
+    description: siteConfig.defaultDescription,
+    url: siteConfig.baseUrl,
+    images: [
+      {
+        url: siteConfig.ogImage,
+        width: 1200,
+        height: 630,
+        alt: siteConfig.ogImageAlt,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: siteConfig.twitterHandle,
+    creator: siteConfig.twitterCreator,
+    title: siteConfig.defaultTitle,
+    description: siteConfig.defaultDescription,
+    images: [siteConfig.ogImage],
+  },
+  alternates: {
+    canonical: siteConfig.baseUrl,
+  },
+  ...(siteConfig.verification.google
+    ? { verification: { google: siteConfig.verification.google } }
+    : {}),
 };
 
 export default function RootLayout({
@@ -35,6 +87,12 @@ export default function RootLayout({
       lang="en"
       className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}
     >
+      <head>
+        {/* Site-wide JSON-LD structured data */}
+        <JsonLd schema={organizationSchema()} id="organization-schema" />
+        <JsonLd schema={softwareApplicationSchema()} id="software-application-schema" />
+        <JsonLd schema={webSiteSchema()} id="website-schema" />
+      </head>
       <body>
         <AuthProvider>
           <ToastProvider>

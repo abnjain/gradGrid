@@ -1,8 +1,17 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
+import {
+  JsonLd,
+  BreadcrumbJsonLd,
+  FaqSection,
+  EntityBadge,
+} from "@/components/seo";
+import {
+  organizationSchema,
+  softwareApplicationSchema,
+} from "@/lib/seo";
 import {
   GraduationCap,
   Shield,
@@ -15,9 +24,41 @@ import {
   School,
 } from "lucide-react";
 
+export const metadata: Metadata = {
+  title: "Cloud-Native Education ERP for Schools & Colleges | GradGrid",
+  description:
+    "GradGrid is a secure, scalable, multi-tenant Education ERP SaaS platform. Manage students, teachers, attendance, exams, fees, and communication — all from one platform.",
+  openGraph: {
+    title: "GradGrid — Cloud-Native Education ERP for Schools & Colleges",
+    description:
+      "Manage students, teachers, attendance, exams, fees, and communication — all from one secure, cloud-native platform.",
+  },
+  twitter: {
+    title: "GradGrid — Cloud-Native Education ERP for Schools & Colleges",
+    description:
+      "Manage students, teachers, attendance, exams, fees, and communication — all from one secure, cloud-native platform.",
+  },
+  keywords: [
+    "Education ERP",
+    "School Management System",
+    "College ERP",
+    "Student Management",
+    "Attendance System",
+    "Fee Management",
+    "Multi-Tenant SaaS",
+    "Educational Platform",
+    "GradGrid",
+  ].join(", "),
+};
+
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-fog">
+      {/* Structured data */}
+      <JsonLd schema={organizationSchema()} id="landing-organization" />
+      <JsonLd schema={softwareApplicationSchema()} id="landing-software" />
+      <BreadcrumbJsonLd items={[{ name: "Home", item: "/" }]} />
+
       {/* Header */}
       <header className="border-b border-border bg-surface">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
@@ -121,6 +162,40 @@ export default function LandingPage() {
             </Link>
           </div>
         </div>
+      </section>
+
+      {/* FAQ Section — AEO optimized */}
+      <section className="max-w-4xl mx-auto px-6 pb-20">
+        <FaqSection
+          title="Frequently Asked Questions"
+          items={[
+            {
+              question: "What is GradGrid?",
+              answer:
+                "GradGrid is a cloud-native, multi-tenant Education ERP SaaS platform designed for schools, colleges, universities, coaching institutes, and educational organizations. It provides a unified system to manage students, teachers, attendance, examinations, fees, communication, and administrative operations from a single dashboard.",
+            },
+            {
+              question: "How does GradGrid help schools manage attendance?",
+              answer:
+                "GradGrid simplifies attendance tracking with class-wise and student-wise daily marking, automatic register generation, teacher attendance management, and comprehensive attendance reports. Teachers can mark attendance quickly, and administrators get real-time visibility into attendance rates across classes and sessions.",
+            },
+            {
+              question: "What features does GradGrid offer for fee management?",
+              answer:
+                "GradGrid provides end-to-end fee management including fee structure configuration with installments, scholarships and discounts, payment recording, receipt generation, fee reports, and outstanding tracking. The system supports multiple fee types and provides a clear collection summary for accountants and owners.",
+            },
+            {
+              question: "Is GradGrid suitable for multi-campus institutions?",
+              answer:
+                "Yes. GradGrid is built from the ground up as a multi-tenant platform. It supports organizations managing multiple institutions under a single account, with complete data isolation per institution. Each institution can have its own branding, academic sessions, and user roles while the parent organization retains centralized oversight.",
+            },
+            {
+              question: "How does GradGrid ensure data security?",
+              answer:
+                "Security is a foundational principle of GradGrid. The platform follows Zero Trust architecture, encrypts sensitive fields (Aadhaar, PAN) with AES-256-GCM at the application layer, enforces least-privilege authorization, maintains complete audit logs for all privileged operations, and uses httpOnly refresh tokens with rotation for session management.",
+            },
+          ]}
+        />
       </section>
 
       {/* Footer */}
