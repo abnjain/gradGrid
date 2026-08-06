@@ -2,6 +2,16 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
+import { validateValue, type ValidatorName } from "@/lib/validators";
+
+export interface InputHandle {
+  /** Validate the current value against the named rule. Returns true when valid. */
+  validate: () => boolean;
+  /** Clear any internally shown validation error. */
+  clearError: () => void;
+  /** Focus the underlying input. */
+  focus: () => void;
+}
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   status?: "default" | "error" | "success" | "loading";
@@ -13,9 +23,19 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   label?: string;
   required?: boolean;
   containerClassName?: string;
+  /** Named validation variant — runs on blur and via the ref handle. */
+  validation?: ValidatorName;
+  /** Value to match against (e.g. confirm-password matches the password field). */
+  validateMatch?: string;
+  /** Override the default message for the named validation variant. */
+  validationMessage?: string;
+  /** Message shown when the field is left empty (e.g. "Email is required"). */
+  requiredMessage?: string;
+  /** Treat empty value as invalid (default true). */
+  validationRequired?: boolean;
 }
 
-const Input = React.forwardRef<HTMLInputElement, InputProps>(
+const Input = React.forwardRef<InputHandle, InputProps>(
   (
     {
       className,
@@ -28,12 +48,57 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       label,
       required,
       containerClassName,
+      validation,
+      validateMatch,
+      validationMessage,
+      requiredMessage,
+      validationRequired = true,
       id,
+      onBlur,
+      value,
       ...props
     },
     ref
   ) => {
-    const inputId = id || `input-${Math.random().toString(36).slice(2, 9)}`;
+    const generatedId = React.useId().replace(/[^a-zA-Z0-9]/g, "");
+    const inputId = id || `input-${generatedId}`;
+    const inputRef = React.useRef<HTMLInputElement>(null);
+    const [blurError, setBlurError] = React.useState<string | undefined>();
+
+    const effectiveError = error ?? blurError;
+    const effectiveStatus = effectiveError ? "error" : status;
+
+    const computeError = React.useCallback(
+      (currentValue: string): string | undefined =>
+        validateValue(currentValue, validation, {
+          matchValue: validateMatch,
+          customMessage: validationMessage,
+          requiredMessage,
+          required: validationRequired,
+        }),
+      [validation, validateMatch, validationMessage, requiredMessage, validationRequired]
+    );
+
+    React.useImperativeHandle(
+      ref,
+      () => ({
+        validate: () => {
+          const currentValue =
+            typeof value === "string" ? value : inputRef.current?.value ?? "";
+          const err = computeError(currentValue);
+          setBlurError(err);
+          return !err;
+        },
+        clearError: () => setBlurError(undefined),
+        focus: () => inputRef.current?.focus(),
+      }),
+      [computeError, value]
+    );
+
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+      if (validation) setBlurError(computeError(e.target.value));
+      onBlur?.(e);
+    };
 
     return (
       <div className={cn("flex flex-col gap-1 relative", containerClassName)}>
@@ -49,20 +114,23 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
           <input
             id={inputId}
-            ref={ref}
+            ref={inputRef}
+            onBlur={handleBlur}
             className={cn(
               "w-full h-[38px] px-3 text-sm text-ink bg-surface border-[1.5px] border-border-strong rounded-md outline-none transition-all duration-[0.14s] font-body placeholder:text-mist",
               "hover:not-disabled:not-[.input-error]:not-[.input-success]:border-mid",
               "focus:border-brand focus:shadow-[0_0_0_3px_rgba(13,148,136,0.12)]",
-              status === "error" && "border-danger bg-[#FFFBFB] focus:shadow-[0_0_0_3px_rgba(220,38,38,0.10)]",
-              status === "success" && "border-success focus:shadow-[0_0_0_3px_rgba(5,150,105,0.10)]",
-              status === "loading" && "animate-shimmer",
+              effectiveStatus === "error" &&
+                "border-danger bg-[#FFFBFB] dark:bg-danger-dim/20 focus:shadow-[0_0_0_3px_rgba(220,38,38,0.10)]",
+              effectiveStatus === "success" && "border-success focus:shadow-[0_0_0_3px_rgba(5,150,105,0.10)]",
+              effectiveStatus === "loading" && "animate-shimmer",
               "disabled:bg-fog disabled:text-mid disabled:cursor-not-allowed disabled:border-border",
               iconLeft && "pl-9",
               iconRight && "pr-9",
               className
             )}
-            disabled={props.disabled || status === "loading"}
+            disabled={props.disabled || effectiveStatus === "loading"}
+            value={value}
             {...props}
           />
           {iconRight && (
@@ -71,9 +139,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             </span>
           )}
         </div>
-        {error && <span className="text-xs text-danger flex items-center gap-1 mt-0.5">{error}</span>}
-        {successMsg && !error && <span className="text-xs text-success flex items-center gap-1 mt-0.5">{successMsg}</span>}
-        {hint && !error && !successMsg && <span className="text-xs text-mist mt-0.5 leading-5">{hint}</span>}
+        {effectiveError && <span className="text-xs text-danger flex items-center gap-1 mt-0.5">{effectiveError}</span>}
+        {successMsg && !effectiveError && <span className="text-xs text-success flex items-center gap-1 mt-0.5">{successMsg}</span>}
+        {hint && !effectiveError && !successMsg && <span className="text-xs text-mist mt-0.5 leading-5">{hint}</span>}
       </div>
     );
   }
@@ -91,7 +159,8 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, label, required, error, hint, options, placeholder, id, ...props }, ref) => {
-    const selectId = id || `select-${Math.random().toString(36).slice(2, 9)}`;
+    const generatedId = React.useId().replace(/[^a-zA-Z0-9]/g, "");
+    const selectId = id || `select-${generatedId}`;
     return (
       <div className="flex flex-col gap-1">
         {label && (
@@ -137,7 +206,8 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, label, required, error, hint, id, ...props }, ref) => {
-    const textareaId = id || `textarea-${Math.random().toString(36).slice(2, 9)}`;
+    const generatedId = React.useId().replace(/[^a-zA-Z0-9]/g, "");
+    const textareaId = id || `textarea-${generatedId}`;
     return (
       <div className="flex flex-col gap-1">
         {label && (

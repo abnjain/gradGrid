@@ -85,9 +85,16 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}
     >
       <head>
+        {/* Apply saved theme before paint to avoid a flash of the wrong theme */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("gradgrid-theme");var d=t?t==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;if(d)document.documentElement.classList.add("dark");}catch(e){}})();`,
+          }}
+        />
         {/* Site-wide JSON-LD structured data */}
         <JsonLd schema={organizationSchema()} id="organization-schema" />
         <JsonLd schema={softwareApplicationSchema()} id="software-application-schema" />

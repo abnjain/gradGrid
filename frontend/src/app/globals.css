@@ -1,11 +1,13 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ═══════════════════════════════════════════════════
    GRADGRID DESIGN SYSTEM v2.0 — Tailwind Theme
    All tokens derived from GradGrid_Design_System_v2.html
 ═══════════════════════════════════════════════════ */
 
-@theme inline {
+@theme {
   /* Brand – Deep Teal */
   --color-brand: #0D9488;
   --color-brand-hover: #0F766E;
@@ -126,7 +128,46 @@
   --shadow-lg: 0 10px 15px rgba(17, 24, 39, 0.08), 0 4px 6px rgba(17, 24, 39, 0.04);
   --shadow-xl: 0 20px 25px rgba(17, 24, 39, 0.09), 0 8px 10px rgba(17, 24, 39, 0.05);
 }
+/* ═══════════════════════════════════════════════════
+   DARK MODE — token overrides
+   Applied when .dark is set on <html> (see ThemeToggle)
+═══════════════════════════════════════════════════ */
+@layer base {
+  .dark {
+    color-scheme: dark;
 
+    /* Brand – lighter teal reads better on dark surfaces */
+    --color-brand: #2DD4BF;
+    --color-brand-hover: #14B8A6;
+    --color-brand-active: #0F766E;
+    --color-brand-dim: #134E4A;
+    --color-brand-mid: #2DD4BF;
+    --color-brand-text: #99F6E4;
+
+    /* Neutrals – inverted */
+    --color-ink: #F9FAFB;
+    --color-slate: #E5E7EB;
+    --color-charcoal: #D1D5DB;
+    --color-mid: #9CA3AF;
+    --color-mist: #6B7280;
+    --color-border: #334155;
+    --color-border-strong: #475569;
+    --color-fog: #0F172A;
+    --color-surface: #111827;
+    --color-surface-raised: #1F2937;
+
+    /* Semantic colors – brightened for contrast on dark surfaces */
+    --color-success: #34D399;
+    --color-warning: #FBBF24;
+    --color-danger: #F87171;
+    --color-info: #38BDF8;
+  }
+
+  .dark body {
+    background: var(--color-fog);
+    color: var(--color-ink);
+  }
+}
 /* ═══════════════════════════════════════════════════
    BASE STYLES
 ═══════════════════════════════════════════════════ */

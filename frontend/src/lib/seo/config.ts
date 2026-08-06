@@ -23,6 +23,28 @@ export interface SiteConfig {
   verification: {
     google?: string;
   };
+  /** Contact details used across About / Contact / legal pages */
+  contact: {
+    email: string;
+    supportEmail: string;
+    phone: string;
+    phoneAlt: string;
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+  };
+  /** Social profiles */
+  social: {
+    twitter: string;
+    linkedin: string;
+    github: string;
+  };
+  /** Legal document dates */
+  legal: {
+    termsUpdatedAt: string;
+    privacyUpdatedAt: string;
+  };
 }
 
 export const siteConfig: SiteConfig = {
@@ -41,6 +63,25 @@ export const siteConfig: SiteConfig = {
     "A secure, scalable, cloud-native multi-tenant Education ERP SaaS platform for schools, colleges, universities, and educational organizations. Manage students, attendance, examinations, fees, and more.",
   verification: {
     google: process.env.NEXT_PUBLIC_GSC_VERIFICATION || "",
+  },
+  contact: {
+    email: "abnjain25@gmail.com",
+    supportEmail: "jainsaab0002@gmail.com",
+    phone: "+91 80856 48283",
+    phoneAlt: "+91 74703 99799",
+    address: "Level 4, Tech Park, Whitefield",
+    city: "Indore",
+    state: "Madhya Pradesh",
+    country: "India",
+  },
+  social: {
+    twitter: "https://twitter.com/gradgrid",
+    linkedin: "https://linkedin.com/company/gradgrid",
+    github: "https://github.com/gradgrid",
+  },
+  legal: {
+    termsUpdatedAt: "2026-08-06",
+    privacyUpdatedAt: "2026-08-06",
   },
 };
 

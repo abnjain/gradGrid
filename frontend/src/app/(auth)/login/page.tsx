@@ -1,9 +1,10 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input, type InputHandle } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/ui/toast";
 import { Lock, Eye, EyeOff, ArrowRight, Mail } from "lucide-react";
@@ -16,20 +17,18 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
   const [form, setForm] = React.useState({ email: "", password: "" });
-  const [errors, setErrors] = React.useState({ email: "", password: "" });
 
-  function validate(): boolean {
-    const next = { email: "", password: "" };
-    if (!form.email.trim()) next.email = "Email is required";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) next.email = "Invalid email address";
-    if (!form.password) next.password = "Password is required";
-    setErrors(next);
-    return !next.email && !next.password;
-  }
+  // Refs to Input handles — validation lives inside the Input component.
+  const emailRef = React.useRef<InputHandle>(null);
+  const passwordRef = React.useRef<InputHandle>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!validate()) return;
+
+    // Trigger the built-in validation on every field.
+    const fields = [emailRef, passwordRef];
+    const valid = fields.map((r) => r.current?.validate() ?? true).every(Boolean);
+    if (!valid) return;
 
     setIsLoading(true);
     try {
@@ -49,37 +48,41 @@ export default function LoginPage() {
       {/* Left — Form */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
-          {/* Logo */}
-          <div className="flex items-center gap-2.5 mb-8">
+          {/* Logo → Home */}
+          <Link href="/" className="flex items-center gap-2.5 mb-8 no-underline hover:no-underline">
             <div className="w-9 h-9 bg-brand rounded-lg flex items-center justify-center">
               <span className="text-white text-lg font-bold font-display">G</span>
             </div>
             <span className="font-display font-bold text-xl text-ink tracking-tight">GradGrid</span>
-          </div>
+          </Link>
 
           <h1 className="text-[28px] font-bold font-display text-ink mb-1.5">Welcome back</h1>
           <p className="text-sm text-mid mb-8">Sign in to your institution account</p>
 
           <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             <Input
+              ref={emailRef}
               label="Email"
               type="email"
               placeholder="you@institution.edu"
               required
+              validation="email"
+              requiredMessage="Email is required"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              error={errors.email}
               iconLeft={<Mail className="w-4 h-4" />}
             />
             <div className="flex flex-col gap-1">
               <Input
+                ref={passwordRef}
                 label="Password"
                 type={showPassword ? "text" : "password"}
                 placeholder="Enter your password"
                 required
+                validation="required"
+                requiredMessage="Password is required"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
-                error={errors.password}
                 iconLeft={<Lock className="w-4 h-4" />}
                 iconRight={
                   <button type="button" onClick={() => setShowPassword(!showPassword)}>
@@ -100,10 +103,17 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="text-xs text-mist text-center mt-8 leading-[1.6]">
+          <p className="text-sm text-mid text-center mt-6">
+            New to GradGrid?{" "}
+            <Link href="/signup" className="text-brand hover:underline font-medium no-underline hover:no-underline">
+              Create an account
+            </Link>
+          </p>
+
+          <p className="text-xs text-mist text-center mt-6 leading-[1.6]">
             By signing in, you agree to the{" "}
-            <a href="#" className="text-brand hover:underline">Terms of Service</a> and{" "}
-            <a href="#" className="text-brand hover:underline">Privacy Policy</a>.
+            <a href="/terms" className="text-brand hover:underline">Terms of Service</a> and{" "}
+            <a href="/privacy" className="text-brand hover:underline">Privacy Policy</a>.
           </p>
         </div>
       </div>

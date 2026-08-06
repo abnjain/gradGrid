@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import React from "react";
 
 export const metadata: Metadata = {
-  title: "Sign In | GradGrid",
+  title: {
+    default: "GradGrid — Education ERP Platform",
+    template: "%s | GradGrid",
+  },
   description: "Sign in to your GradGrid institution or admin portal.",
   robots: { index: false, follow: false },
 };
