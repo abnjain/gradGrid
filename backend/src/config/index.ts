@@ -51,6 +51,26 @@ export const config = {
     callbackUrl: process.env.GOOGLE_CALLBACK_URL || '',
   },
 
+  /**
+   * SMTP — used by the email service for transactional mail.
+   * Leave SMTP_HOST empty in development to log emails instead of sending.
+   */
+  smtp: {
+    host: process.env.SMTP_HOST || '',
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    secure: process.env.SMTP_SECURE === 'true',
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.SMTP_FROM || 'GradGrid <no-reply@gradgrid.app>',
+  },
+
+  /**
+   * Frontend origin — used to build password reset links.
+   */
+  frontend: {
+    url: process.env.FRONTEND_URL || 'http://localhost:3000',
+  },
+
   log: {
     level: process.env.LOG_LEVEL || 'info',
   },

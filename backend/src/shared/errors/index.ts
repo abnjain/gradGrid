@@ -60,6 +60,12 @@ export class ConflictError extends AppError {
   }
 }
 
+export class BadRequestError extends AppError {
+  constructor(message: string = 'Bad request') {
+    super(httpStatus.BAD_REQUEST, message, 'BAD_REQUEST');
+  }
+}
+
 export class InternalError extends AppError {
   constructor(message: string = 'Internal server error') {
     super(httpStatus.INTERNAL_SERVER_ERROR, message, 'INTERNAL_ERROR', false);

@@ -21,6 +21,7 @@ export interface LoginResponse {
     userType: string;
     roleName: string;
     permissions: string[];
+    sessionId?: string;
   };
   tokens: TokenPair;
 }

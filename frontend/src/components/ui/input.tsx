@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { validateValue, type ValidatorName } from "@/lib/validators";
 
@@ -169,26 +170,28 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             {required && <span className="text-danger text-sm">*</span>}
           </label>
         )}
-        <select
-          id={selectId}
-          ref={ref}
-          className={cn(
-            "w-full h-[38px] px-3 text-sm text-ink bg-surface border-[1.5px] border-border-strong rounded-md outline-none transition-all duration-[0.14s] font-body",
-            "appearance-none pr-8 bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E\")] bg-no-repeat bg-[right_10px_center]",
-            "hover:border-mid focus:border-brand focus:shadow-[0_0_0_3px_rgba(13,148,136,0.12)]",
-            "cursor-pointer",
-            error && "border-danger",
-            className
-          )}
-          {...props}
-        >
-          {placeholder && <option value="">{placeholder}</option>}
-          {options.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+        <div className="relative flex items-center">
+          <select
+            id={selectId}
+            ref={ref}
+            className={cn(
+              "w-full h-[38px] px-3 pr-9 text-sm text-ink bg-surface border-[1.5px] border-border-strong rounded-md outline-none transition-all duration-[0.14s] font-body appearance-none",
+              "hover:border-mid focus:border-brand focus:shadow-[0_0_0_3px_rgba(13,148,136,0.12)]",
+              "cursor-pointer",
+              error && "border-danger",
+              className
+            )}
+            {...props}
+          >
+            {placeholder && <option value="">{placeholder}</option>}
+            {options.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-3 w-4 h-4 text-mid pointer-events-none flex-shrink-0" />
+        </div>
         {error && <span className="text-xs text-danger">{error}</span>}
         {hint && <span className="text-xs text-mist">{hint}</span>}
       </div>

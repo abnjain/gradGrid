@@ -12,7 +12,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api, configureAuth } from './api-client';
-import type { AuthState } from '@/types';
+import type { AuthState, User } from '@/types';
 
 /* ─── Types ─── */
 
@@ -30,15 +30,34 @@ interface LoginResponseData {
     userType: string;
     roleName: string;
     permissions: string[];
+    sessionId?: string;
   };
   tokens: {
     accessToken: string;
   };
 }
 
+/** Shape returned by GET /auth/me (used for silent refresh + profile prefill). */
+interface MeResponseData {
+  user: {
+    id: string;
+    firstName?: string;
+    lastName?: string;
+    first_name?: string;
+    last_name?: string;
+    email: string;
+    userType?: string;
+    user_type?: string;
+    permissions?: string[];
+    sessionId?: string;
+  };
+}
+
 interface AuthContextValue extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
+  /** Update the in-memory user after profile changes (e.g. name/phone). */
+  updateUser: (patch: Partial<Pick<User, "name" | "email">>) => void;
 }
 
 /* ─── Context ─── */
@@ -104,7 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         tokenRef.current = accessToken;
 
         // Step 2: Fetch the user profile with the new token
-        const meRes = await api.get<{ user: any }>('/auth/me', true);
+        const meRes = await api.get<MeResponseData>('/auth/me', true);
 
         if (cancelled) return;
 
@@ -115,8 +134,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               id: u.id,
               name: `${u.firstName || u.first_name || ''} ${u.lastName || u.last_name || ''}`.trim(),
               email: u.email,
-              role: u.userType || u.user_type,
+              role: (u.userType || u.user_type || 'institution') as User['role'],
               permissions: u.permissions || [],
+              sessionId: u.sessionId,
             },
             accessToken,
             isAuthenticated: true,
@@ -156,8 +176,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: user.id,
         name: `${user.firstName} ${user.lastName}`,
         email: user.email,
-        role: user.userType as any,
+        role: user.userType as User['role'],
         permissions: user.permissions || [],
+        sessionId: user.sessionId,
       },
       accessToken: tokens.accessToken,
       isAuthenticated: true,
@@ -182,8 +203,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  // ── Update in-memory user (after profile edits) ──
+  const updateUser = useCallback((patch: Partial<Pick<User, "name" | "email">>) => {
+    setState((prev) => (prev.user ? { ...prev, user: { ...prev.user, ...patch } } : prev));
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ ...state, login, logout }}>
+    <AuthContext.Provider value={{ ...state, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

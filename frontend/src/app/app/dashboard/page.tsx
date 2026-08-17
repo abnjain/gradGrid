@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { StatCard, DetailCard } from "@/components/ui/card";
 import {
   Users,
@@ -11,11 +12,11 @@ import {
   BookOpen,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Timeline } from "@/components/ui/timeline";
 import { ProgressBar } from "@/components/ui/progress";
-import { ArrowRight, Plus } from "lucide-react";
+import { QuickActionsMenu } from "@/components/layout/quick-actions-menu";
+import { ArrowRight } from "lucide-react";
 
 export default function InstitutionDashboard() {
   return (
@@ -31,10 +32,7 @@ export default function InstitutionDashboard() {
             <Calendar className="w-4 h-4" />
             Today
           </Button>
-          <Button size="sm">
-            <Plus className="w-4 h-4" />
-            Quick Action
-          </Button>
+          <QuickActionsMenu />
         </div>
       </div>
 
@@ -171,45 +169,30 @@ export default function InstitutionDashboard() {
           {/* Quick actions */}
           <DetailCard title="Quick Actions">
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="secondary" size="sm" className="justify-start">
-                <ClipboardCheck className="w-4 h-4" />
-                Mark Attendance
-              </Button>
-              <Button variant="secondary" size="sm" className="justify-start">
-                <Users className="w-4 h-4" />
-                Add Student
-              </Button>
-              <Button variant="secondary" size="sm" className="justify-start">
-                <DollarSign className="w-4 h-4" />
-                Record Payment
-              </Button>
-              <Button variant="secondary" size="sm" className="justify-start">
-                <BookOpen className="w-4 h-4" />
-                Create Exam
-              </Button>
-            </div>
-          </DetailCard>
-
-          {/* Notifications */}
-          <DetailCard title="Notifications">
-            <div className="flex flex-col gap-2">
-              {[
-                { text: "3 pending admission approvals", time: "1h", type: "danger" as const },
-                { text: "Salary sheet due for approval", time: "3h", type: "warning" as const },
-                { text: "New support ticket received", time: "5h", type: "info" as const },
-              ].map((n, i) => (
-                <div key={i} className="flex items-start gap-2.5 py-1">
-                  <div className={cn("w-2 h-2 rounded-full mt-1.5 flex-shrink-0", {
-                    "bg-danger": n.type === "danger",
-                    "bg-accent": n.type === "warning",
-                    "bg-info": n.type === "info",
-                  })} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-ink">{n.text}</p>
-                    <span className="text-[11px] text-mist">{n.time}</span>
-                  </div>
-                </div>
-              ))}
+              <Link href="/app/attendance/mark" className="no-underline hover:no-underline">
+                <Button variant="secondary" size="sm" className="w-full justify-start">
+                  <ClipboardCheck className="w-4 h-4" />
+                  Mark Attendance
+                </Button>
+              </Link>
+              <Link href="/app/students/new" className="no-underline hover:no-underline">
+                <Button variant="secondary" size="sm" className="w-full justify-start">
+                  <Users className="w-4 h-4" />
+                  Add Student
+                </Button>
+              </Link>
+              <Link href="/app/finance/record" className="no-underline hover:no-underline">
+                <Button variant="secondary" size="sm" className="w-full justify-start">
+                  <DollarSign className="w-4 h-4" />
+                  Record Payment
+                </Button>
+              </Link>
+              <Link href="/app/examination/create" className="no-underline hover:no-underline">
+                <Button variant="secondary" size="sm" className="w-full justify-start">
+                  <BookOpen className="w-4 h-4" />
+                  Create Exam
+                </Button>
+              </Link>
             </div>
           </DetailCard>
         </div>

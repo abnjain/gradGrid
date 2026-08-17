@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import React from "react";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
 
 export const metadata: Metadata = {
   title: {
@@ -15,5 +16,13 @@ export default function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <>
+      {/* Theme toggle — fixed top-right across all auth pages */}
+      <div className="fixed top-4 right-4 z-50 border border-border rounded-sm bg-surface/80 backdrop-blur-sm">
+        <ThemeToggle />
+      </div>
+      {children}
+    </>
+  );
 }

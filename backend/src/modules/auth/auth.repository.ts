@@ -67,6 +67,16 @@ export class AuthRepository {
     });
   }
 
+  /**
+   * Get a user's current password record (for change-password verification).
+   */
+  async findCurrentPassword(userId: string) {
+    return prisma.user_passwords.findFirst({
+      where: { user_id: userId, is_current: true },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
   async createRefreshToken(data: {
     userId: string;
     tokenHash: string;
@@ -90,6 +100,12 @@ export class AuthRepository {
   async findRefreshToken(tokenHash: string) {
     return prisma.refresh_tokens.findFirst({
       where: { token_hash: tokenHash },
+    });
+  }
+
+  async findUserRefreshTokens(userId: string) {
+    return prisma.refresh_tokens.findMany({
+      where: { user_id: userId, is_revoked: false },
     });
   }
 
@@ -124,6 +140,34 @@ export class AuthRepository {
     });
   }
 
+  /**
+   * Update a user's profile fields (first/last name, phone).
+   */
+  async updateUser(
+    userId: string,
+    data: { first_name?: string; last_name?: string; phone?: string | null }
+  ) {
+    return prisma.users.update({
+      where: { id: userId },
+      data: {
+        ...(data.first_name !== undefined ? { first_name: data.first_name } : {}),
+        ...(data.last_name !== undefined ? { last_name: data.last_name } : {}),
+        ...(data.phone !== undefined ? { phone: data.phone } : {}),
+        updated_at: new Date(),
+      },
+    });
+  }
+
+  /**
+   * List all sessions for a user (most recent first).
+   */
+  async listUserSessions(userId: string) {
+    return prisma.user_sessions.findMany({
+      where: { user_id: userId },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
   async findActiveSession(sessionId: string) {
     return prisma.user_sessions.findFirst({
       where: { id: sessionId, is_active: true, logged_out_at: null },
@@ -141,6 +185,43 @@ export class AuthRepository {
     return prisma.user_sessions.updateMany({
       where: { user_id: userId, is_active: true },
       data: { is_active: false, logged_out_at: new Date() },
+    });
+  }
+
+  /**
+   * Create a password reset token record (token stored as SHA-256 hash).
+   */
+  async createPasswordReset(data: {
+    userId: string;
+    tokenHash: string;
+    expiresAt: Date;
+  }) {
+    return prisma.password_resets.create({
+      data: {
+        user_id: data.userId,
+        token_hash: data.tokenHash,
+        expires_at: data.expiresAt,
+      },
+    });
+  }
+
+  /**
+   * Find a password reset record by its token hash (including the user).
+   */
+  async findPasswordReset(tokenHash: string) {
+    return prisma.password_resets.findFirst({
+      where: { token_hash: tokenHash },
+      include: { user: true },
+    });
+  }
+
+  /**
+   * Mark all of a user's password reset tokens as used.
+   */
+  async invalidatePasswordResets(userId: string) {
+    return prisma.password_resets.updateMany({
+      where: { user_id: userId, is_used: false },
+      data: { is_used: true },
     });
   }
 }

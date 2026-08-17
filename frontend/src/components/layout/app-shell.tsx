@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -23,20 +23,20 @@ import {
   Building2,
   School,
   UserCog,
-  Globe,
-  Mail,
-  Activity,
   UserCircle,
-  Lock,
   LogOut,
   Menu,
   X,
-  Bell,
-  Search,
+  // Search,
   ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { NotificationsDropdown } from "@/components/layout/notifications-dropdown";
+import { useAuth } from "@/lib/auth-context";
 
 /* ─── Types ─── */
 export interface NavItem {
@@ -55,55 +55,55 @@ export interface NavGroup {
 
 /* ─── Institution Portal Navigation ─── */
 const institutionNav: NavGroup[] = [
-  { items: [{ label: "Dashboard", href: "/app/dashboard", icon: <LayoutDashboard className="w-4 h-4" /> }] },
+  { items: [{ label: "Dashboard", href: "/app/dashboard", icon: <LayoutDashboard className="w-4 h-4" />, comingSoon: false }] },
   {
     label: "PEOPLE",
     items: [
-      { label: "Students", href: "/app/students", icon: <GraduationCap className="w-4 h-4" /> },
-      { label: "Teachers", href: "/app/teachers", icon: <Users className="w-4 h-4" /> },
-      { label: "Parents", href: "/app/parents", icon: <Users className="w-4 h-4" /> },
-      { label: "Users", href: "/app/users", icon: <UserCog className="w-4 h-4" /> },
+      { label: "Students", href: "/app/students", icon: <GraduationCap className="w-4 h-4" />, comingSoon: false },
+      { label: "Teachers", href: "/app/teachers", icon: <Users className="w-4 h-4" />, comingSoon: false },
+      { label: "Parents", href: "/app/parents", icon: <Users className="w-4 h-4" />, comingSoon: false },
+      { label: "Users", href: "/app/users", icon: <UserCog className="w-4 h-4" />, comingSoon: false },
     ],
   },
   {
     label: "ADMISSIONS",
     items: [
-      { label: "Admissions", href: "/app/admissions", icon: <UserPlus className="w-4 h-4" /> },
+      { label: "Admissions", href: "/app/admissions", icon: <UserPlus className="w-4 h-4" />, comingSoon: true },
     ],
   },
   {
     label: "ACADEMICS",
     items: [
-      { label: "Academic Structure", href: "/app/academics", icon: <BookOpen className="w-4 h-4" /> },
-      { label: "Attendance", href: "/app/attendance", icon: <ClipboardCheck className="w-4 h-4" /> },
-      { label: "Examination", href: "/app/examination", icon: <FileSpreadsheet className="w-4 h-4" /> },
+      { label: "Academic Structure", href: "/app/academics", icon: <BookOpen className="w-4 h-4" />, comingSoon: true },
+      { label: "Attendance", href: "/app/attendance", icon: <ClipboardCheck className="w-4 h-4" />, comingSoon: true },
+      { label: "Examination", href: "/app/examination", icon: <FileSpreadsheet className="w-4 h-4" />, comingSoon: true },
     ],
   },
   {
     label: "FINANCE",
     items: [
-      { label: "Finance", href: "/app/finance", icon: <DollarSign className="w-4 h-4" /> },
+      { label: "Finance", href: "/app/finance", icon: <DollarSign className="w-4 h-4" />, comingSoon: true },
     ],
   },
   {
     label: "SERVICES",
     items: [
       { label: "Library", href: "/app/library", icon: <Library className="w-4 h-4" />, comingSoon: true },
-      { label: "Communication", href: "/app/communication", icon: <MessageSquare className="w-4 h-4" /> },
-      { label: "Documents", href: "/app/documents", icon: <FileText className="w-4 h-4" /> },
+      { label: "Communication", href: "/app/communication", icon: <MessageSquare className="w-4 h-4" />, comingSoon: true },
+      { label: "Documents", href: "/app/documents", icon: <FileText className="w-4 h-4" />, comingSoon: true },
     ],
   },
   {
     label: "INSIGHTS",
     items: [
-      { label: "Reports", href: "/app/reports", icon: <BarChart3 className="w-4 h-4" /> },
+      { label: "Reports", href: "/app/reports", icon: <BarChart3 className="w-4 h-4" />, comingSoon: true },
     ],
   },
   {
     label: "SYSTEM",
     items: [
-      { label: "Settings", href: "/app/settings", icon: <Settings className="w-4 h-4" /> },
-      { label: "Audit Logs", href: "/app/audit-logs", icon: <ShieldAlert className="w-4 h-4" /> },
+      { label: "Settings", href: "/app/settings", icon: <Settings className="w-4 h-4" />, comingSoon: false },
+      { label: "Audit Logs", href: "/app/audit-logs", icon: <ShieldAlert className="w-4 h-4" />, comingSoon: false },
     ],
   },
 ];
@@ -143,10 +143,19 @@ interface SidebarProps {
   institutionName?: string;
   sessionName?: string;
   onClose?: () => void;
+  onCollapse?: () => void;
 }
 
-function Sidebar({ nav, type, institutionName, sessionName, onClose }: SidebarProps) {
+function Sidebar({ nav, type, institutionName, sessionName, onClose, onCollapse }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    onClose?.();
+    await logout();
+    router.push("/login");
+  };
 
   const isActive = (href: string) => {
     if (href === "/app/dashboard" || href === "/admin/dashboard") {
@@ -156,7 +165,7 @@ function Sidebar({ nav, type, institutionName, sessionName, onClose }: SidebarPr
   };
 
   return (
-    <aside className="w-[260px] h-screen bg-ink flex flex-col flex-shrink-0 overflow-hidden">
+    <aside className="w-[260px] h-screen bg-[#111827] flex flex-col flex-shrink-0 overflow-hidden">
       {/* Logo */}
       <div className="px-5 pt-5 pb-4 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -165,11 +174,23 @@ function Sidebar({ nav, type, institutionName, sessionName, onClose }: SidebarPr
           </div>
           <span className="font-display font-bold text-white text-[15px] tracking-tight">GradGrid</span>
         </div>
-        {onClose && (
-          <button onClick={onClose} className="text-white/50 hover:text-white lg:hidden">
-            <X className="w-4 h-4" />
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {onCollapse && (
+            <button
+              onClick={onCollapse}
+              title="Collapse sidebar"
+              aria-label="Collapse sidebar"
+              className="hidden lg:inline-flex w-7 h-7 items-center justify-center rounded-md text-white/50 hover:text-white hover:bg-white/5 transition-colors"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
+          )}
+          {onClose && (
+            <button onClick={onClose} className="text-white/50 hover:text-white lg:hidden">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Institution context */}
@@ -200,7 +221,14 @@ function Sidebar({ nav, type, institutionName, sessionName, onClose }: SidebarPr
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={onClose}
+                  onClick={(e) => {
+                    // Only navigate when the module is available — otherwise block it
+                    if (item.comingSoon) {
+                      e.preventDefault();
+                      return;
+                    }
+                    onClose?.();
+                  }}
                   className={cn(
                     "flex items-center gap-2.5 px-3 py-[9px] rounded-lg text-sm transition-all duration-[0.14s] no-underline group relative",
                     active
@@ -228,14 +256,15 @@ function Sidebar({ nav, type, institutionName, sessionName, onClose }: SidebarPr
       {/* Bottom section */}
       <div className="px-3 pb-4 pt-2 border-t border-white/5">
         <Link
-          href={type === "institution" ? "/app/settings" : "/admin/account"}
+          href={type === "institution" ? "/app/account" : "/admin/account"}
+          onClick={onClose}
           className="flex items-center gap-2.5 px-3 py-[9px] rounded-lg text-sm text-white/65 hover:bg-white/5 hover:text-white/85 transition-all no-underline"
         >
           <UserCircle className="w-4 h-4 text-white/40 flex-shrink-0" />
           <span className="flex-1 truncate">My Account</span>
         </Link>
         <button
-          onClick={() => {/* TODO: logout */}}
+          onClick={handleLogout}
           className="w-full flex items-center gap-2.5 px-3 py-[9px] rounded-lg text-sm text-white/65 hover:bg-white/5 hover:text-white/85 transition-all no-underline"
         >
           <LogOut className="w-4 h-4 text-white/40 flex-shrink-0" />
@@ -250,13 +279,27 @@ function Sidebar({ nav, type, institutionName, sessionName, onClose }: SidebarPr
 interface HeaderProps {
   breadcrumbs?: { label: string; href?: string }[];
   onMenuClick: () => void;
+  onExpandSidebar?: () => void;
 }
 
-function Header({ breadcrumbs, onMenuClick }: HeaderProps) {
+function Header({ breadcrumbs, onMenuClick, onExpandSidebar }: HeaderProps) {
+  const { user } = useAuth();
+  const displayName = user?.name?.trim() || user?.email || "Account";
+
   return (
     <header className="h-14 bg-surface border-b border-border flex items-center justify-between px-4 lg:px-6 flex-shrink-0">
       {/* Left */}
       <div className="flex items-center gap-3">
+        {onExpandSidebar && (
+          <button
+            onClick={onExpandSidebar}
+            title="Expand sidebar"
+            aria-label="Expand sidebar"
+            className="hidden lg:inline-flex w-8 h-8 items-center justify-center rounded-md text-mid hover:bg-surface-raised transition-colors"
+          >
+            <PanelLeftOpen className="w-4 h-4" />
+          </button>
+        )}
         <button
           onClick={onMenuClick}
           className="lg:hidden w-8 h-8 flex items-center justify-center rounded-md text-mid hover:bg-surface-raised transition-colors"
@@ -286,17 +329,16 @@ function Header({ breadcrumbs, onMenuClick }: HeaderProps) {
 
       {/* Right */}
       <div className="flex items-center gap-1">
-        <button className="w-8 h-8 flex items-center justify-center rounded-md text-mid hover:bg-surface-raised transition-colors relative">
+        <ThemeToggle />
+        <div className="w-px h-5 bg-border mx-1" />
+        {/* <button className="w-8 h-8 flex items-center justify-center rounded-md text-mid hover:bg-surface-raised transition-colors relative">
           <Search className="w-4 h-4" />
-        </button>
-        <button className="w-8 h-8 flex items-center justify-center rounded-md text-mid hover:bg-surface-raised transition-colors relative">
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-danger rounded-full" />
-        </button>
+        </button> */}
+        <NotificationsDropdown />
         <div className="w-px h-5 bg-border mx-1" />
         <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-surface-raised transition-colors">
-          <Avatar name="Admin User" size="sm" />
-          <span className="text-sm text-charcoal font-medium hidden sm:inline">Admin</span>
+          <Avatar name={displayName} size="sm" />
+          <span className="text-sm text-charcoal font-medium hidden sm:inline">{displayName}</span>
         </button>
       </div>
     </header>
@@ -314,20 +356,29 @@ interface AppShellProps {
 
 function AppShell({ children, type, breadcrumbs, institutionName, sessionName }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [desktopCollapsed, setDesktopCollapsed] = React.useState(false);
   const nav = type === "institution" ? institutionNav : adminNav;
 
   return (
     <div className="flex h-screen overflow-hidden bg-fog">
       {/* Desktop sidebar */}
-      <div className="hidden lg:flex">
-        <Sidebar nav={nav} type={type} institutionName={institutionName} sessionName={sessionName} />
-      </div>
+      {!desktopCollapsed && (
+        <div className="hidden lg:flex">
+          <Sidebar
+            nav={nav}
+            type={type}
+            institutionName={institutionName}
+            sessionName={sessionName}
+            onCollapse={() => setDesktopCollapsed(true)}
+          />
+        </div>
+      )}
 
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div
-            className="fixed inset-0 bg-ink/50 backdrop-blur-sm"
+            className="fixed inset-0 bg-[#111827]/50 backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
           />
           <div className="fixed left-0 top-0 bottom-0 z-50 animate-slide-in-right">
@@ -344,7 +395,11 @@ function AppShell({ children, type, breadcrumbs, institutionName, sessionName }:
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
-        <Header breadcrumbs={breadcrumbs} onMenuClick={() => setSidebarOpen(true)} />
+        <Header
+          breadcrumbs={breadcrumbs}
+          onMenuClick={() => setSidebarOpen(true)}
+          onExpandSidebar={desktopCollapsed ? () => setDesktopCollapsed(false) : undefined}
+        />
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">
           {children}
         </main>

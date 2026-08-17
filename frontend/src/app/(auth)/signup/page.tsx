@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, type InputHandle } from "@/components/ui/input";
 import { PasswordStrength } from "@/components/ui/password-strength";
-import { api } from "@/lib/api-client";
+import { api, type ApiResponse } from "@/lib/api-client";
 import { useToast } from "@/components/ui/toast";
 import { Lock, Eye, EyeOff, ArrowRight, Mail, User } from "lucide-react";
 
@@ -16,6 +16,7 @@ export default function SignUpPage() {
 
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+  const [passwordFocused, setPasswordFocused] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
   const [form, setForm] = React.useState({
     firstName: "",
@@ -54,8 +55,9 @@ export default function SignUpPage() {
       );
       addToast({ variant: "success", title: "Account created", description: "Please sign in with your new credentials." });
       router.push("/login");
-    } catch (err: any) {
-      const message = err?.error?.message || err?.message || "Something went wrong. Please try again.";
+    } catch (err) {
+      const apiError = err as Partial<ApiResponse>;
+      const message = apiError?.error?.message || "Something went wrong. Please try again.";
       addToast({ variant: "error", title: "Sign up failed", description: message });
     } finally {
       setIsLoading(false);
@@ -124,6 +126,8 @@ export default function SignUpPage() {
               validation="password"
               requiredMessage="Valid Password is required"
               value={form.password}
+              onFocus={() => setPasswordFocused(true)}
+              onBlur={() => setPasswordFocused(false)}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               iconLeft={<Lock className="w-4 h-4" />}
               iconRight={
@@ -132,7 +136,7 @@ export default function SignUpPage() {
                 </button>
               }
             />
-            <PasswordStrength value={form.password} />
+            <PasswordStrength value={form.password} show={passwordFocused} />
             <Input
               ref={confirmPasswordRef}
               label="Confirm password"
@@ -141,7 +145,7 @@ export default function SignUpPage() {
               required
               validation="password"
               validateMatch={form.password}
-              requiredMessage="Confirm password"
+              requiredMessage="Confirm password is required"
               value={form.confirmPassword}
               onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
               iconLeft={<Lock className="w-4 h-4" />}

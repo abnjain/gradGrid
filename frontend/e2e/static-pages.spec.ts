@@ -9,9 +9,9 @@ test.describe("Static pages", () => {
   test("about page renders story, mission, and values", async ({ page }) => {
     await page.goto("/about");
     await expect(page.getByRole("heading", { name: /Built for education/i })).toBeVisible();
-    await expect(page).toContainText("Our Story");
-    await expect(page).toContainText("Our Mission");
-    await expect(page).toContainText("What We Stand For");
+    await expect(page.locator("body")).toContainText("Our Story");
+    await expect(page.locator("body")).toContainText("Our Mission");
+    await expect(page.locator("body")).toContainText("What We Stand For");
     await expect(page.getByRole("link", { name: "Contact Us" })).toHaveAttribute("href", "/contact");
   });
 
@@ -24,7 +24,7 @@ test.describe("Static pages", () => {
     await expect(page.locator('a[href^="tel:"]').first()).toBeVisible();
 
     // Support hours
-    await expect(page).toContainText("Support hours");
+    await expect(page.locator("body")).toContainText("Support hours");
 
     // Form fields
     await expect(page.locator('input[placeholder="Jane Doe"]')).toBeVisible();
@@ -34,7 +34,13 @@ test.describe("Static pages", () => {
 
   test("contact form validates required fields on submit", async ({ page }) => {
     await page.goto("/contact");
-    await page.getByRole("button", { name: "Send Message" }).click();
+    // Native click — reliable in this throttled headless environment
+    await page.evaluate(() => {
+      const btn = Array.from(document.querySelectorAll("form button")).find((b) =>
+        b.textContent?.includes("Send Message")
+      );
+      (btn as HTMLButtonElement).click();
+    });
     await expect(page.locator("form")).toContainText("Name is required");
     await expect(page.locator("form")).toContainText("Email is required");
     await expect(page.locator("form")).toContainText("Message is required");

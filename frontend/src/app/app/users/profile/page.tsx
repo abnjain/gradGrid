@@ -7,6 +7,7 @@ import { Construction } from "lucide-react";
 export default function MyProfilePage() {
   return (
     <EmptyState
+      backTo="/app/dashboard"
       icon={<Construction className="w-12 h-12" />}
       title="My Profile"
       description="View and edit your profile information and preferences."

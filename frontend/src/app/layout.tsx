@@ -100,7 +100,7 @@ export default function RootLayout({
         <JsonLd schema={softwareApplicationSchema()} id="software-application-schema" />
         <JsonLd schema={webSiteSchema()} id="website-schema" />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <AuthProvider>
           <ToastProvider>
             {children}

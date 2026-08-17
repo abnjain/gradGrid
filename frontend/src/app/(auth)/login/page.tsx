@@ -34,9 +34,10 @@ export default function LoginPage() {
     try {
       await login({ email: form.email, password: form.password });
       addToast({ variant: "success", title: "Signed in successfully" });
-      router.push("/app");
-    } catch (err: any) {
-      const message = err?.error?.message || err?.message || "Invalid email or password";
+      router.push("/app/dashboard");
+    } catch (err) {
+      const apiError = err as { message?: string };
+      const message = apiError?.message || "Invalid email or password";
       addToast({ variant: "error", title: "Login failed", description: message });
     } finally {
       setIsLoading(false);

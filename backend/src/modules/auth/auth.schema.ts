@@ -32,3 +32,24 @@ export const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Reset token is required'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
 });
+
+export const updateProfileSchema = z.object({
+  firstName: z.string().min(1, 'First name is required').max(100),
+  lastName: z.string().min(1, 'Last name is required').max(100),
+  phone: z
+    .union([
+      z.string().regex(/^[+]?[\d\s\-()]{7,20}$/, 'Please enter a valid phone number'),
+      z.literal(''),
+      z.null(),
+    ])
+    .optional(),
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+export const sessionParamsSchema = z.object({
+  sessionId: z.string().uuid('Invalid session id'),
+});

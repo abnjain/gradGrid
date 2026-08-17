@@ -9,15 +9,18 @@ import { cn } from "@/lib/utils";
 interface PasswordStrengthProps {
   /** The current password value — the checklist updates live as it changes. */
   value: string;
+  /** Show the panel (e.g. while the password field is focused/clicked). */
+  show?: boolean;
   className?: string;
 }
 
 /**
  * Live password strength indicator.
- * - Shows a strength bar with a label (Weak / Good / Strong)
- * - Shows every required rule with a filled check when satisfied
+ * - Appears only when `show` is true (typically while the password field is focused)
+ * - Strength bar with a label (Weak / Good / Strong)
+ * - Required rules aligned inline, each with a filled check when satisfied
  */
-export function PasswordStrength({ value, className }: PasswordStrengthProps) {
+export function PasswordStrength({ value, show = false, className }: PasswordStrengthProps) {
   const rules = React.useMemo(() => checkPasswordStrength(value), [value]);
   const metCount = rules.filter((r) => r.met).length;
   const total = rules.length;
@@ -39,8 +42,10 @@ export function PasswordStrength({ value, className }: PasswordStrengthProps) {
   const labelClass =
     barColor === "success" ? "text-success" : barColor === "warning" ? "text-warning" : "text-danger";
 
+  if (!show) return null;
+
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn("bg-fog border border-border rounded-lg px-3 py-2.5 space-y-2", className)}>
       {/* Strength bar */}
       {value.length > 0 && (
         <div className="flex items-center gap-2">
@@ -49,20 +54,20 @@ export function PasswordStrength({ value, className }: PasswordStrengthProps) {
         </div>
       )}
 
-      {/* Rules checklist */}
-      <ul className="space-y-1 flex flex-col gap-x-4 gap-y-1 justify-around">
+      {/* Rules checklist — aligned inline, wrapping to fill the available width */}
+      <ul className="flex flex-wrap gap-x-4 gap-y-1.5">
         {rules.map((rule) => (
-          <li key={rule.key} className="flex items-center gap-2 text-xs">
+          <li key={rule.key} className="flex items-center gap-1.5 text-xs">
             <span
               className={cn(
-                "w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-colors duration-200",
+                "w-3.5 h-3.5 rounded-full flex items-center justify-center shrink-0 transition-colors duration-200",
                 rule.met
                   ? "bg-success text-white"
                   : "bg-surface-raised text-transparent border border-border-strong"
               )}
               aria-hidden="true"
             >
-              <Check className="w-3 h-3" strokeWidth={3} />
+              <Check className="w-2.5 h-2.5" strokeWidth={3} />
             </span>
             <span
               className={cn(
