@@ -34,6 +34,13 @@ First Docker build takes **5–15 minutes**. Check logs for:
 - `gradgrid-api` — `Running database migrations...` then `GradGrid API server started`
 - `gradgrid-web` — Next.js standalone server listening
 
+**If API fails with `DATABASE_URL is not set` or `datasource.url property is required`:**
+
+1. Open **gradgrid-api → Environment** in Render Dashboard
+2. Confirm `DATABASE_URL` exists (auto-wired from `gradgrid-db` via Blueprint)
+3. If missing: **gradgrid-db → Connect → Internal Database URL** → paste as `DATABASE_URL` on `gradgrid-api`
+4. **Manual Deploy** `gradgrid-api` again
+
 ### 3. Re-deploy if URLs are missing (first time only)
 
 Blueprint links `CORS_ORIGIN` and `API_INTERNAL_URL` across services. If the first deploy fails linking URLs:

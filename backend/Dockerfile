@@ -12,8 +12,10 @@ RUN npm ci
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY prisma ./prisma
-COPY package.json package-lock.json tsconfig.json ./
+COPY prisma.config.ts package.json package-lock.json tsconfig.json ./
 COPY src ./src
+# prisma.config.ts requires DATABASE_URL at generate time; not used to connect during build
+ENV DATABASE_URL=postgresql://build:build@localhost:5432/gradgrid?schema=public
 RUN npx prisma generate && npm run build
 
 FROM base AS prod-deps
@@ -34,7 +36,7 @@ RUN addgroup --system --gid 1001 gradgrid \
 COPY --from=build --chown=gradgrid:gradgrid /app/dist ./dist
 COPY --from=prod-deps --chown=gradgrid:gradgrid /app/node_modules ./node_modules
 COPY --from=prod-deps --chown=gradgrid:gradgrid /app/prisma ./prisma
-COPY --chown=gradgrid:gradgrid package.json docker-entrypoint.sh /app/
+COPY --chown=gradgrid:gradgrid package.json prisma.config.ts docker-entrypoint.sh /app/
 RUN chmod +x /app/docker-entrypoint.sh
 
 WORKDIR /app
