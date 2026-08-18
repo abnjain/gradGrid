@@ -133,7 +133,7 @@ export default function PrivacyPage() {
       <Section title="9. Changes to This Policy">
         <p>
           We may update this Privacy Policy from time to time. We will notify you of material
-          changes through the Service or by email. The "last updated" date above reflects the most
+          changes through the Service or by email. The &ldquo;last updated&rdquo; date above reflects the most
           recent revision.
         </p>
       </Section>

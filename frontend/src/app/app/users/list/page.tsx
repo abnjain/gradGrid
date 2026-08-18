@@ -27,7 +27,7 @@ const mockData: UsersItem[] = [
 
 const columns = [
   { key: "name", header: "User", sortable: true, width: "280px",
-    render: (item: {name: any}) => <PersonCell person={item.name} /> },
+    render: (item: UsersItem) => <PersonCell person={item.name} /> },
       { key: "role", header: "Role", width: "120px" },
       { key: "email", header: "Email", width: "220px" },
       { key: "lastActive", header: "Last Active", width: "140px" },

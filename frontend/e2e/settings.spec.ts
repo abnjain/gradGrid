@@ -166,8 +166,8 @@ test.describe("Roles & Permissions", () => {
   });
 
   test("permission matrix has modules and action checkboxes", async ({ page }) => {
-    for (const module of ["Students", "Attendance", "Finance", "Reports", "Communication", "Settings"]) {
-      await expect(page.locator("main")).toContainText(module);
+    for (const moduleName of ["Students", "Attendance", "Finance", "Reports", "Communication", "Settings"]) {
+      await expect(page.locator("main")).toContainText(moduleName);
     }
     for (const action of ["View", "Create", "Edit", "Delete"]) {
       await expect(page.locator("main")).toContainText(action);

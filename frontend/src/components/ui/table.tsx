@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "./button";
-import { Badge } from "./badge";
+import { Badge, type BadgeProps } from "./badge";
 import { Avatar } from "./avatar";
 import { Skeleton } from "./skeleton";
 
@@ -52,7 +52,7 @@ function SortIcon({ active, direction }: { active: boolean; direction?: "asc" | 
 }
 
 /* ─── Helper: Person Cell ─── */
-export interface PersonCell {
+export interface PersonCellData {
   name: string;
   subtitle?: string;
   avatarSrc?: string;
@@ -60,7 +60,7 @@ export interface PersonCell {
   badge?: { text: string; variant: string };
 }
 
-export function PersonCell({ person }: { person: PersonCell }) {
+export function PersonCell({ person }: { person: PersonCellData }) {
   return (
     <div className="flex items-center gap-3">
       <Avatar name={person.name} src={person.avatarSrc} color={person.avatarColor} size="sm" />
@@ -69,7 +69,9 @@ export function PersonCell({ person }: { person: PersonCell }) {
         {person.subtitle && <span className="text-xs text-mid truncate">{person.subtitle}</span>}
       </div>
       {person.badge && (
-        <Badge variant={person.badge.variant as any}>{person.badge.text}</Badge>
+        <Badge variant={person.badge.variant as NonNullable<BadgeProps["variant"]>}>
+          {person.badge.text}
+        </Badge>
       )}
     </div>
   );
@@ -234,7 +236,9 @@ function Table<T>({
                           col.align === "right" && "text-right"
                         )}
                       >
-                        {col.render ? col.render(item) : (item as any)[col.key] ?? "-"}
+                        {col.render
+                          ? col.render(item)
+                          : String((item as Record<string, unknown>)[col.key] ?? "-")}
                       </td>
                     ))}
                   </tr>

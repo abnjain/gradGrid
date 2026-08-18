@@ -27,7 +27,7 @@ const mockData: TeachersItem[] = [
 
 const columns = [
   { key: "name", header: "Teacher", sortable: true, width: "280px",
-    render: (item: {name: any}) => <PersonCell person={item.name} /> },
+    render: (item: TeachersItem) => <PersonCell person={item.name} /> },
       { key: "department", header: "Department", sortable: true, width: "140px" },
       { key: "subjects", header: "Subjects", width: "180px" },
       { key: "classes", header: "Classes", width: "100px" },

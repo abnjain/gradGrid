@@ -28,7 +28,7 @@ const mockData: FeeCollectionsItem[] = [
 
 const columns = [
   { key: "name", header: "Student", sortable: true, width: "240px",
-    render: (item: any) => <PersonCell person={item.name} /> },
+    render: (item: FeeCollectionsItem) => <PersonCell person={item.name} /> },
       { key: "class", header: "Class", width: "80px" },
       { key: "feeType", header: "Fee Type", width: "140px" },
       { key: "amount", header: "Amount", width: "120px" },

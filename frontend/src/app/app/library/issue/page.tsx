@@ -26,8 +26,7 @@ const mockData: IssueBooksItem[] = [
 
 const columns = [
   { key: "name", header: "Borrower", sortable: true, width: "240px",
-    render: (item: IssueBooksItem) => <PersonCell person={item.name as any} />
-  },
+    render: (item: IssueBooksItem) => <PersonCell person={item.name} /> },
       { key: "book", header: "Book", width: "200px" },
       { key: "issueDate", header: "Issue Date", width: "120px" },
       { key: "dueDate", header: "Due Date", width: "120px" },

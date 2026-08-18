@@ -42,9 +42,9 @@ export default function TermsPage() {
 
       <Section title="1. Acceptance of Terms">
         <p>
-          These Terms of Service ("Terms") govern your access to and use of the {siteConfig.name}{" "}
+          These Terms of Service (&ldquo;Terms&rdquo;) govern your access to and use of the {siteConfig.name}{" "}
           platform, including its website, applications, and related services (collectively, the
-          "Service"). By registering for an account or otherwise accessing the Service, you agree
+          &ldquo;Service&rdquo;). By registering for an account or otherwise accessing the Service, you agree
           to these Terms. If you are using the Service on behalf of an institution, you represent
           that you have the authority to bind that institution.
         </p>
@@ -107,7 +107,7 @@ export default function TermsPage() {
 
       <Section title="8. Disclaimers">
         <p>
-          The Service is provided "as is" and "as available," without warranties of any kind,
+          The Service is provided &ldquo;as is&rdquo; and &ldquo;as available,&rdquo; without warranties of any kind,
           whether express or implied, including implied warranties of merchantability, fitness for
           a particular purpose, and non-infringement. We do not warrant that the Service will be
           uninterrupted, error-free, or free of harmful components.

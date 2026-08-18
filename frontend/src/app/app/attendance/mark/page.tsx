@@ -26,7 +26,7 @@ const mockData: MarkAttendanceItem[] = [
 
 const columns = [
   { key: "name", header: "Student", sortable: true, width: "280px",
-    render: (item: any) => <PersonCell person={item.name} /> },
+    render: (item: MarkAttendanceItem) => <PersonCell person={item.name} /> },
       { key: "rollNo", header: "Roll No", width: "90px" },
       { key: "status", header: "Attendance", width: "120px" }
 ];

@@ -37,7 +37,7 @@ const mockData: StudentsItem[] = [
 
 const columns = [
   { key: "name", header: "Student", sortable: true, width: "280px",
-    render: (item: any) => <PersonCell person={item.name} /> },
+    render: (item: StudentsItem) => <PersonCell person={item.name} /> },
   { key: "class", header: "Class", sortable: true, width: "100px" },
   { key: "rollNo", header: "Roll No", width: "100px" },
   { key: "gender", header: "Gender", width: "90px" },

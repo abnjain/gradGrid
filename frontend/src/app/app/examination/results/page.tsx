@@ -29,7 +29,7 @@ const mockData: ExaminationResultsItem[] = [
 
 const columns = [
   { key: "name", header: "Student", sortable: true, width: "240px",
-    render: (item: any) => <PersonCell person={item.name} /> },
+    render: (item: ExaminationResultsItem) => <PersonCell person={item.name} /> },
       { key: "exam", header: "Examination", width: "160px" },
       { key: "class", header: "Class", width: "80px" },
       { key: "total", header: "Total Marks", width: "100px" },

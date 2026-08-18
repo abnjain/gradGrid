@@ -1,6 +1,5 @@
 import { test, expect } from "@playwright/test";
 import {
-  mockInstitutionLogin,
   mockInstitutionSession,
   mockPlatformAuthApis,
   mockPlatformSession,
