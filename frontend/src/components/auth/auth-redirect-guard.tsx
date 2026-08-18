@@ -14,15 +14,27 @@ export function AuthRedirectGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, user, tenantContext } = useAuth();
 
   React.useEffect(() => {
     if (isLoading || !isAuthenticated || !isAuthPath(pathname)) return;
 
     const returnUrl = searchParams.get("returnUrl");
-    const destination = resolvePostAuthRedirect(user?.userType, returnUrl);
+    const destination = resolvePostAuthRedirect(
+      user?.userType,
+      returnUrl,
+      !!tenantContext?.institutionId
+    );
     router.replace(destination);
-  }, [isAuthenticated, isLoading, pathname, router, searchParams, user?.userType]);
+  }, [
+    isAuthenticated,
+    isLoading,
+    pathname,
+    router,
+    searchParams,
+    tenantContext?.institutionId,
+    user?.userType,
+  ]);
 
   if (isLoading && isAuthPath(pathname)) {
     return (

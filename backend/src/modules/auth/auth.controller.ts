@@ -10,27 +10,28 @@ import { Request, Response, NextFunction } from 'express';
 import httpStatus from 'http-status';
 import { AuthService } from './auth.service';
 import { SignupRequestService } from '../platform/signup-request.service';
+import { TenantContextService } from './tenant-context.service';
 import { config } from '../../config';
 import { AuthenticatedRequest } from '../../shared/types';
 
 const authService = new AuthService();
 const signupService = new SignupRequestService();
+const tenantContextService = new TenantContextService();
 
-/**
- * Cookie configuration for the refresh token.
- * - httpOnly: prevents JavaScript access (XSS protection)
- * - secure: only sent over HTTPS in production
- * - sameSite: strict prevents CSRF
- * - maxAge: matches refresh token expiry
- * - path: only sent to the refresh endpoint
- */
-const REFRESH_COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: config.isProd,
-  sameSite: 'strict' as const,
-  path: `${config.api.prefix}/auth/refresh`,
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-};
+function getRefreshCookieOptions() {
+  const defaultPath = `${config.api.prefix}/auth/refresh`;
+  const path = config.cookies.path || defaultPath;
+  const sameSite =
+    config.cookies.sameSite || (config.isProd ? 'strict' : 'lax');
+
+  return {
+    httpOnly: true,
+    secure: config.isProd,
+    sameSite: sameSite as 'strict' | 'lax' | 'none',
+    path,
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  };
+}
 
 export class AuthController {
   /**
@@ -47,7 +48,7 @@ export class AuthController {
 
       // Set refresh token as httpOnly cookie — never expose to JS
       const { refreshToken, ...publicTokens } = result.tokens;
-      res.cookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTIONS);
+      res.cookie('refreshToken', refreshToken, getRefreshCookieOptions());
 
       res.status(httpStatus.OK).json({
         success: true,
@@ -157,7 +158,7 @@ export class AuthController {
 
       // Rotate the httpOnly cookie — never expose the new refresh token to JS
       const { refreshToken, ...publicTokens } = tokens;
-      res.cookie('refreshToken', refreshToken, REFRESH_COOKIE_OPTIONS);
+      res.cookie('refreshToken', refreshToken, getRefreshCookieOptions());
 
       res.status(httpStatus.OK).json({
         success: true,
@@ -183,12 +184,7 @@ export class AuthController {
       await authService.logout(sessionId, userId, userType);
 
       // Clear the refresh token cookie
-      res.clearCookie('refreshToken', {
-        httpOnly: true,
-        secure: config.isProd,
-        sameSite: 'strict' as const,
-        path: `${config.api.prefix}/auth/refresh`,
-      });
+      res.clearCookie('refreshToken', getRefreshCookieOptions());
 
       res.status(httpStatus.OK).json({
         success: true,
@@ -205,10 +201,49 @@ export class AuthController {
   async me(req: Request, res: Response, next: NextFunction) {
     try {
       const authUser = (req as AuthenticatedRequest).user;
-      const user = await authService.getProfile(authUser.id);
+      const user = await authService.getProfile(authUser.id, authUser.institutionId);
       res.status(httpStatus.OK).json({
         success: true,
         data: { user: { ...user, sessionId: authUser.sessionId } },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/v1/auth/workspaces
+   */
+  async workspaces(req: Request, res: Response, next: NextFunction) {
+    try {
+      const authUser = (req as AuthenticatedRequest).user;
+      const result = await tenantContextService.getWorkspaces(authUser.id, authUser.userType);
+      res.status(httpStatus.OK).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/v1/auth/select-context
+   */
+  async selectContext(req: Request, res: Response, next: NextFunction) {
+    try {
+      const authUser = (req as AuthenticatedRequest).user;
+      const result = await tenantContextService.selectContext(
+        authUser.id,
+        authUser.userType,
+        authUser.sessionId,
+        authUser.email,
+        req.body
+      );
+      res.status(httpStatus.OK).json({
+        success: true,
+        data: {
+          tokens: { accessToken: result.accessToken },
+          context: result.context,
+        },
+        message: 'Workspace context selected',
       });
     } catch (error) {
       next(error);

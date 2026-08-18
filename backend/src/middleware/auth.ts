@@ -21,6 +21,7 @@ interface JwtPayload {
   userType: 'platform' | 'institution';
   sessionId: string;
   institutionId?: string | null;
+  organizationId?: string | null;
 }
 
 export async function authenticate(
@@ -53,6 +54,7 @@ export async function authenticate(
       email: payload.email,
       userType: payload.userType,
       institutionId: payload.institutionId,
+      organizationId: payload.organizationId,
       sessionId: payload.sessionId,
       roleId: '',
       roleName: '',
@@ -100,6 +102,7 @@ export function optionalAuth(
       email: payload.email,
       userType: payload.userType,
       institutionId: payload.institutionId,
+      organizationId: payload.organizationId,
       sessionId: payload.sessionId,
       roleId: '',
       roleName: '',

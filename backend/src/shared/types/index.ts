@@ -12,6 +12,7 @@ export interface AuthUser {
   email: string;
   userType: 'platform' | 'institution';
   institutionId?: string | null;
+  organizationId?: string | null;
   roleId: string;
   roleName: string;
   permissions: string[];

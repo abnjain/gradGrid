@@ -18,6 +18,7 @@ import {
   updateProfileSchema,
   changePasswordSchema,
   sessionParamsSchema,
+  selectContextSchema,
 } from './auth.schema';
 
 const router = Router();
@@ -42,8 +43,15 @@ router.post('/forgot-password', validate({ body: forgotPasswordSchema }), contro
 router.post('/reset-password', validate({ body: resetPasswordSchema }), controller.resetPassword);
 
 // Protected routes
-router.get('/me', authenticate, controller.me);
-router.post('/logout', authenticate, controller.logout);
+router.get('/me', authenticate, controller.me.bind(controller));
+router.get('/workspaces', authenticate, controller.workspaces.bind(controller));
+router.post(
+  '/select-context',
+  authenticate,
+  validate({ body: selectContextSchema }),
+  controller.selectContext.bind(controller)
+);
+router.post('/logout', authenticate, controller.logout.bind(controller));
 router.patch('/profile', authenticate, validate({ body: updateProfileSchema }), controller.updateProfile);
 router.post('/change-password', authenticate, validate({ body: changePasswordSchema }), controller.changePassword);
 router.get('/sessions', authenticate, controller.listSessions);

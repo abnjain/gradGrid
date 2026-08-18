@@ -1,6 +1,42 @@
 node_modules/
 dist/
 .env
+.env.local
+!.env.example
 *.log
 .DS_Store
-.*
+
+# IDE / editor (keep .github and project dotfiles tracked)
+.vscode/
+.vscode
+.idea/
+.idea
+*.swp
+*.swo
+*~
+
+# Personal shell / tool dotfiles (never commit)
+.bashrc
+.bash_profile
+.profile
+.zshrc
+.zprofile
+.gitconfig
+.gitmodules
+.ripgreprc
+.mcp.json
+
+# Docker
+.docker/
+
+# Playwright / test artifacts
+test-results/
+playwright-report/
+blob-report/
+
+# Next.js
+.next/
+out/
+
+# OS
+Thumbs.db

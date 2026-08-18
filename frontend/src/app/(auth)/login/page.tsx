@@ -32,7 +32,7 @@ function LoginForm() {
     try {
       const userType = await login({ email: form.email.trim(), password: form.password });
       const returnUrl = searchParams.get("returnUrl");
-      router.push(resolvePostAuthRedirect(userType, returnUrl));
+      router.push(resolvePostAuthRedirect(userType, returnUrl, false));
       addToast({ variant: "success", title: "Signed in successfully" });
     } catch (err) {
       if (err instanceof AuthApiError) {

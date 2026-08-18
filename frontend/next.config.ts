@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Standalone output for container deployments (Docker / K8s)
+  output: "standalone",
+
   // Compress with Brotli/gzip
   compress: true,
 
@@ -46,14 +49,29 @@ const nextConfig: NextConfig = {
     },
   ],
 
-  // API proxy for development
+  // API proxy: dev uses localhost rewrite; production may use API_INTERNAL_URL at build
+  // or runtime proxy via app/api/[[...path]]/route.ts (Render).
   async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: "http://localhost:4000/api/:path*",
-      },
-    ];
+    const apiInternal =
+      process.env.API_INTERNAL_URL || process.env.DOCKER_BUILD_API_URL;
+    if (apiInternal) {
+      const base = apiInternal.replace(/\/$/, "");
+      return [
+        {
+          source: "/api/:path*",
+          destination: `${base}/api/:path*`,
+        },
+      ];
+    }
+    if (process.env.NODE_ENV === "development") {
+      return [
+        {
+          source: "/api/:path*",
+          destination: "http://localhost:4000/api/:path*",
+        },
+      ];
+    }
+    return [];
   },
 };
 

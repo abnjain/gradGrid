@@ -84,4 +84,41 @@ export const config = {
     enabled: !!process.env.REDIS_URL,
     keyPrefix: process.env.REDIS_KEY_PREFIX || 'gradgrid:',
   },
+
+  /** Behind Render / reverse proxy — trust X-Forwarded-* headers */
+  trustProxy: process.env.TRUST_PROXY === 'true',
+
+  cookies: {
+    path: process.env.COOKIE_PATH || '',
+    sameSite: (process.env.COOKIE_SAME_SITE as 'strict' | 'lax' | 'none' | undefined) || undefined,
+  },
 } as const;
+
+const INSECURE_SECRET_MARKERS = ['change-me', 'dev-access-secret', 'dev-refresh-secret'];
+
+function isInsecureSecret(value: string): boolean {
+  if (!value || value.length < 32) return true;
+  const lower = value.toLowerCase();
+  return INSECURE_SECRET_MARKERS.some((marker) => lower.includes(marker));
+}
+
+/** Fail fast in production when required secrets are missing or still use dev defaults. */
+export function validateProductionConfig(): void {
+  if (!config.isProd) return;
+
+  const missing: string[] = [];
+
+  if (!config.db.url) missing.push('DATABASE_URL');
+  if (isInsecureSecret(config.auth.accessTokenSecret)) missing.push('ACCESS_TOKEN_SECRET');
+  if (isInsecureSecret(config.auth.refreshTokenSecret)) missing.push('REFRESH_TOKEN_SECRET');
+  if (!config.encryption.key || config.encryption.key.length < 32) missing.push('ENCRYPTION_KEY');
+  if (!config.encryption.masterKey || config.encryption.masterKey.length < 32) {
+    missing.push('MASTER_ENCRYPTION_KEY');
+  }
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Production configuration invalid. Set secure values for: ${missing.join(', ')}`
+    );
+  }
+}

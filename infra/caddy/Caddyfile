@@ -1,0 +1,26 @@
+# GradGrid — Caddy reverse proxy
+# Routes /api/* to the API service and everything else to the Next.js frontend.
+# TLS: set SITE_DOMAIN and ACME_EMAIL in the environment for automatic HTTPS.
+
+{
+	{$CADDY_GLOBAL_OPTIONS:}
+}
+
+{$SITE_ADDRESS::80} {
+	encode gzip zstd
+
+	header {
+		X-Frame-Options "SAMEORIGIN"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	handle /api/* {
+		reverse_proxy api:4000
+	}
+
+	handle {
+		reverse_proxy frontend:3000
+	}
+}

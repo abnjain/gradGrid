@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
-  AUTH_PATHS,
   REFRESH_COOKIE_NAME,
+  PORTAL_COOKIE_NAME,
   getPortalHome,
   isAuthPath,
   isProtectedPath,
@@ -33,8 +33,11 @@ export function proxy(request: NextRequest) {
 
   if (isAuthPath(pathname) && hasSession) {
     const returnUrl = searchParams.get("returnUrl");
+    const portalType = request.cookies.get(PORTAL_COOKIE_NAME)?.value;
     const destination =
-      returnUrl && isSafeReturnUrl(returnUrl) ? returnUrl : getPortalHome();
+      returnUrl && isSafeReturnUrl(returnUrl)
+        ? returnUrl
+        : getPortalHome(portalType === "platform" ? "platform" : "institution");
 
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = destination;
@@ -49,6 +52,9 @@ export const config = {
   matcher: [
     "/app/:path*",
     "/admin/:path*",
-    ...AUTH_PATHS,
+    "/login",
+    "/signup",
+    "/forgot-password",
+    "/reset-password",
   ],
 };

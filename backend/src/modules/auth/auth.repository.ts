@@ -174,6 +174,30 @@ export class AuthRepository {
     });
   }
 
+  async findLatestActiveSession(userId: string) {
+    return prisma.user_sessions.findFirst({
+      where: { user_id: userId, is_active: true, logged_out_at: null },
+      orderBy: { last_active_at: 'desc' },
+    });
+  }
+
+  async updateSessionInstitution(sessionId: string, institutionId: string) {
+    return prisma.user_sessions.update({
+      where: { id: sessionId },
+      data: {
+        institution_id: institutionId,
+        last_active_at: new Date(),
+      },
+    });
+  }
+
+  async touchSession(sessionId: string) {
+    return prisma.user_sessions.update({
+      where: { id: sessionId },
+      data: { last_active_at: new Date() },
+    });
+  }
+
   async deactivateSession(sessionId: string) {
     return prisma.user_sessions.update({
       where: { id: sessionId },

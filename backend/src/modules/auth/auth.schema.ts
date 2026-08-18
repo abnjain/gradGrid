@@ -103,3 +103,8 @@ export const changePasswordSchema = z.object({
 export const sessionParamsSchema = z.object({
   sessionId: z.string().uuid('Invalid session id'),
 });
+
+export const selectContextSchema = z.object({
+  organizationId: z.string().uuid('Invalid organization id'),
+  institutionId: z.string().uuid('Invalid institution id'),
+});

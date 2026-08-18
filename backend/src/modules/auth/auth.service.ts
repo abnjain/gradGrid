@@ -21,6 +21,7 @@ import {
   EmailNotVerifiedError,
 } from '../../shared/errors';
 import { SignupRequestService } from '../platform/signup-request.service';
+import { TenantContextService } from './tenant-context.service';
 import { createContextLogger, auditLog } from '../../shared/utils/logger';
 
 const logger = createContextLogger({ module: 'auth' });
@@ -28,10 +29,12 @@ const logger = createContextLogger({ module: 'auth' });
 export class AuthService {
   private repository: AuthRepository;
   private signupService: SignupRequestService;
+  private tenantContextService: TenantContextService;
 
   constructor() {
     this.repository = new AuthRepository();
     this.signupService = new SignupRequestService();
+    this.tenantContextService = new TenantContextService();
   }
 
   /**
@@ -78,7 +81,14 @@ export class AuthService {
       expiresAt: new Date(Date.now() + 15 * 60 * 1000), // matches access token expiry
     });
 
-    const tokens = await this.generateTokens(user.id, user.email, user.user_type, session.id, user.institution_id);
+    const tokens = await this.generateTokens(
+      user.id,
+      user.email,
+      user.user_type,
+      session.id,
+      user.user_type === 'platform' ? user.institution_id : null,
+      null
+    );
     await this.repository.updateLastLogin(user.id);
 
     auditLog('LOGIN_SUCCESS', {
@@ -117,7 +127,8 @@ export class AuthService {
     email: string,
     userType: string,
     sessionId: string,
-    institutionId?: string | null
+    institutionId?: string | null,
+    organizationId?: string | null
   ): Promise<TokenPair> {
     const accessToken = jwt.sign(
       {
@@ -125,7 +136,8 @@ export class AuthService {
         email,
         userType,
         sessionId,
-        institutionId,
+        institutionId: institutionId || undefined,
+        organizationId: organizationId || undefined,
       },
       config.auth.accessTokenSecret,
       { expiresIn: config.auth.accessTokenExpiresIn as jwt.SignOptions['expiresIn'] }
@@ -188,15 +200,36 @@ export class AuthService {
       throw new UnauthorizedError('User not found or deactivated');
     }
 
-    // Create new session for the refreshed token
-    const session = await this.repository.createSession({
-      userId: user.id,
-      ipAddress: 'unknown',
-      userAgent: 'token_refresh',
-      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
-    });
+    let session = await this.repository.findLatestActiveSession(user.id);
+    if (!session) {
+      session = await this.repository.createSession({
+        userId: user.id,
+        ipAddress: 'unknown',
+        userAgent: 'token_refresh',
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+      });
+    } else {
+      await this.repository.touchSession(session.id);
+    }
 
-    return this.generateTokens(user.id, user.email, user.user_type, session.id, user.institution_id);
+    let organizationId: string | null = null;
+    const institutionId = session.institution_id;
+    if (institutionId) {
+      const tenantContext = await this.tenantContextService.resolveTenantContext(
+        user.id,
+        institutionId
+      );
+      organizationId = tenantContext?.organizationId || null;
+    }
+
+    return this.generateTokens(
+      user.id,
+      user.email,
+      user.user_type,
+      session.id,
+      institutionId,
+      organizationId
+    );
   }
 
   /**
@@ -241,11 +274,16 @@ export class AuthService {
   /**
    * Get a user's public profile (used by GET /auth/me).
    */
-  async getProfile(userId: string) {
+  async getProfile(userId: string, sessionInstitutionId?: string | null) {
     const user = await this.repository.findUserById(userId);
     if (!user) {
       throw new NotFoundError('User not found');
     }
+
+    const tenantContext = await this.tenantContextService.resolveTenantContext(
+      userId,
+      sessionInstitutionId || null
+    );
 
     return {
       id: user.id,
@@ -254,7 +292,11 @@ export class AuthService {
       email: user.email,
       phone: user.phone || '',
       userType: user.user_type,
-      institutionId: user.institution_id,
+      institutionId: tenantContext?.institutionId || null,
+      organizationId: tenantContext?.organizationId || null,
+      organizationName: tenantContext?.organizationName || null,
+      institutionName: tenantContext?.institutionName || null,
+      tenantContext,
     };
   }
 

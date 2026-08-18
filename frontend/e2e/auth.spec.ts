@@ -1,58 +1,16 @@
 import { test, expect } from "@playwright/test";
+import { mockLoginError, toastContainer } from "./helpers/test-auth";
 
 /**
- * Auth flows — client-side validation and navigation.
- * Backend-independent except where API routes are mocked.
+ * Core auth pages — login, forgot password, reset password.
+ * Signup and tenant routing tests live in signup.spec.ts and tenant-routing.spec.ts.
  */
 
-test.describe("Signup", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto("/signup");
-    await expect(page.getByRole("heading", { name: "Register your institution" })).toBeVisible();
-  });
-
-  test("step 1 requires organization and institution fields", async ({ page }) => {
-    await page.getByRole("button", { name: "Continue" }).click();
-    await expect(page.locator("body")).toContainText("Organization name is required");
-    await expect(page.locator("body")).toContainText("Institution name is required");
-    await expect(page.locator("body")).toContainText("Institution code is required");
-  });
-
-  test("step 1 advances to owner account step", async ({ page }) => {
-    await page.getByLabel("Organization name").fill("ABC Education");
-    await page.getByLabel("Institution name").fill("Greenwood High");
-    await page.getByLabel("Institution code").fill("GHS-001");
-    await page.getByRole("button", { name: "Continue" }).click();
-    await expect(page.getByText("Step 2 of 2")).toBeVisible();
-    await expect(page.getByLabel("First name")).toBeVisible();
-  });
-
-  test("step 2 validates owner fields", async ({ page }) => {
-    await page.getByLabel("Organization name").fill("ABC Education");
-    await page.getByLabel("Institution name").fill("Greenwood High");
-    await page.getByLabel("Institution code").fill("GHS-001");
-    await page.getByRole("button", { name: "Continue" }).click();
-    await page.getByRole("button", { name: "Submit application" }).click();
-    await expect(page.locator("body")).toContainText("First name is required");
-    await expect(page.locator("body")).toContainText("Email is required");
-  });
-
-  test("password strength checklist appears on owner step", async ({ page }) => {
-    await page.getByLabel("Organization name").fill("ABC Education");
-    await page.getByLabel("Institution name").fill("Greenwood High");
-    await page.getByLabel("Institution code").fill("GHS-001");
-    await page.getByRole("button", { name: "Continue" }).click();
-    const pw = page.getByLabel("Password");
-    await pw.focus();
-    await pw.fill("Abcdefg1!");
-    await expect(page.locator("body")).toContainText("Strong");
-  });
-
-  test("navigation links are wired correctly", async ({ page }) => {
-    await expect(page.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login");
-    await expect(page.locator('a[href="/"]').first()).toContainText("GradGrid");
-  });
-});
+async function submitLogin(page: import("@playwright/test").Page, email: string, password: string) {
+  await page.locator('input[placeholder="you@institution.edu"]').fill(email);
+  await page.locator('input[placeholder="Enter your password"]').fill(password);
+  await page.getByRole("button", { name: "Sign In" }).click();
+}
 
 test.describe("Login", () => {
   test.beforeEach(async ({ page }) => {
@@ -76,6 +34,47 @@ test.describe("Login", () => {
   test("links navigate to signup and home", async ({ page }) => {
     await expect(page.getByRole("link", { name: "Register your institution" })).toHaveAttribute("href", "/signup");
     await expect(page.locator('a[href="/"]').first()).toContainText("GradGrid");
+  });
+});
+
+test.describe("Login — signup application status", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/login");
+    await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
+  });
+
+  test("pending application shows approval warning toast", async ({ page }) => {
+    await mockLoginError(
+      page,
+      "APPLICATION_PENDING",
+      "Your signup application is awaiting admin approval"
+    );
+    await submitLogin(page, "owner@school.edu", "SecurePass1!");
+
+    await expect(toastContainer(page).getByText("Application pending", { exact: true })).toBeVisible();
+    await expect(page.getByText("awaiting admin approval")).toBeVisible();
+    await expect(page).toHaveURL(/\/login$/);
+  });
+
+  test("rejected application shows rejection toast", async ({ page }) => {
+    await mockLoginError(
+      page,
+      "APPLICATION_REJECTED",
+      "Your previous application was rejected"
+    );
+    await submitLogin(page, "owner@school.edu", "SecurePass1!");
+
+    await expect(toastContainer(page).getByText("Application rejected", { exact: true })).toBeVisible();
+    await expect(page.getByText("submit a new one")).toBeVisible();
+    await expect(page).toHaveURL(/\/login$/);
+  });
+
+  test("unverified email redirects to signup verify step", async ({ page }) => {
+    await mockLoginError(page, "EMAIL_NOT_VERIFIED", "Please verify your email before logging in");
+    await submitLogin(page, "owner@school.edu", "SecurePass1!");
+
+    await expect(page).toHaveURL(/\/signup\?step=verify&email=owner%40school\.edu/);
+    await expect(page.getByRole("heading", { name: "Verify your email" })).toBeVisible();
   });
 });
 

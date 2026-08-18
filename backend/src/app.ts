@@ -16,6 +16,10 @@ import routes from './routes';
 
 const app = express();
 
+if (config.trustProxy) {
+  app.set('trust proxy', 1);
+}
+
 // Security
 app.use(helmet());
 app.use(

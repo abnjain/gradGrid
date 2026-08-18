@@ -1,0 +1,98 @@
+# GradGrid — Render Blueprint (free tier)
+# Dashboard → New → Blueprint → select this repo → Apply
+#
+# Provisions: PostgreSQL + API (Docker) + Frontend (Docker)
+# Optional: add SMTP_* keys on gradgrid-api after first deploy (see render.env.example)
+
+databases:
+  - name: gradgrid-db
+    plan: free
+    databaseName: gradgrid
+    user: gradgrid
+
+services:
+  - type: web
+    name: gradgrid-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gradgrid-db
+          property: connectionString
+      - key: ACCESS_TOKEN_SECRET
+        generateValue: true
+      - key: REFRESH_TOKEN_SECRET
+        generateValue: true
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      - key: MASTER_ENCRYPTION_KEY
+        generateValue: true
+      - key: TRUST_PROXY
+        value: "true"
+      - key: COOKIE_PATH
+        value: /
+      - key: COOKIE_SAME_SITE
+        value: lax
+      - key: RUN_MIGRATIONS
+        value: "true"
+      - key: CORS_ORIGIN
+        fromService:
+          type: web
+          name: gradgrid-web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: gradgrid-web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_SECURE
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+
+  - type: web
+    name: gradgrid-web
+    runtime: docker
+    plan: free
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    dockerCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOSTNAME
+        value: 0.0.0.0
+      - key: NEXT_PUBLIC_API_URL
+        value: /api/v1
+      - key: NEXT_PUBLIC_SITE_URL
+        fromService:
+          type: web
+          name: gradgrid-web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: API_INTERNAL_URL
+        fromService:
+          type: web
+          name: gradgrid-api
+          envVarKey: RENDER_EXTERNAL_URL
+      # Passed to Docker build so Next.js can bake rewrites when available
+      - key: DOCKER_BUILD_API_URL
+        fromService:
+          type: web
+          name: gradgrid-api
+          envVarKey: RENDER_EXTERNAL_URL

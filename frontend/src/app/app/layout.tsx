@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import React from "react";
-import { AppShell } from "@/components/layout/app-shell";
+import { InstitutionAppLayout } from "@/components/layout/institution-app-layout";
 
 export const metadata: Metadata = {
   title: "Institution Portal | GradGrid",
@@ -8,9 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function InstitutionLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <AppShell type="institution" institutionName="Demo Institution" sessionName="2025–2026">
-      {children}
-    </AppShell>
-  );
+  return <InstitutionAppLayout>{children}</InstitutionAppLayout>;
 }

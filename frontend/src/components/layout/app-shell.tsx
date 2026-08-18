@@ -142,12 +142,13 @@ interface SidebarProps {
   nav: NavGroup[];
   type: "institution" | "admin";
   institutionName?: string;
+  organizationName?: string;
   sessionName?: string;
   onClose?: () => void;
   onCollapse?: () => void;
 }
 
-function Sidebar({ nav, type, institutionName, sessionName, onClose, onCollapse }: SidebarProps) {
+function Sidebar({ nav, type, institutionName, organizationName, sessionName, onClose, onCollapse }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { logout } = useAuth();
@@ -198,7 +199,10 @@ function Sidebar({ nav, type, institutionName, sessionName, onClose, onCollapse 
       {type === "institution" && (
         <div className="px-4 pb-3">
           <div className="bg-white/5 rounded-lg px-3 py-2.5 border border-white/5">
-            <p className="text-[11px] text-white/40 font-medium truncate">{institutionName || "Institution"}</p>
+            {organizationName && (
+              <p className="text-[10px] text-white/35 font-medium truncate mb-0.5">{organizationName}</p>
+            )}
+            <p className="text-[11px] text-white/40 font-medium truncate">{institutionName || "Campus"}</p>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="text-xs text-white/80 font-semibold truncate">{sessionName || "Session"}</span>
               <ChevronDown className="w-3 h-3 text-white/40 flex-shrink-0" />
@@ -352,10 +356,11 @@ interface AppShellProps {
   type: "institution" | "admin";
   breadcrumbs?: { label: string; href?: string }[];
   institutionName?: string;
+  organizationName?: string;
   sessionName?: string;
 }
 
-function AppShell({ children, type, breadcrumbs, institutionName, sessionName }: AppShellProps) {
+function AppShell({ children, type, breadcrumbs, institutionName, organizationName, sessionName }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [desktopCollapsed, setDesktopCollapsed] = React.useState(false);
   const nav = type === "institution" ? institutionNav : adminNav;
@@ -369,6 +374,7 @@ function AppShell({ children, type, breadcrumbs, institutionName, sessionName }:
             nav={nav}
             type={type}
             institutionName={institutionName}
+            organizationName={organizationName}
             sessionName={sessionName}
             onCollapse={() => setDesktopCollapsed(true)}
           />
@@ -387,6 +393,7 @@ function AppShell({ children, type, breadcrumbs, institutionName, sessionName }:
               nav={nav}
               type={type}
               institutionName={institutionName}
+              organizationName={organizationName}
               sessionName={sessionName}
               onClose={() => setSidebarOpen(false)}
             />

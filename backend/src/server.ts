@@ -5,7 +5,7 @@
  */
 
 import app from './app';
-import { config } from './config';
+import { config, validateProductionConfig } from './config';
 import { logger } from './shared/utils/logger';
 import { prisma } from './config/database';
 import { initCache } from './shared/utils/cache';
@@ -13,6 +13,8 @@ import { initCache } from './shared/utils/cache';
 let server: ReturnType<typeof app.listen>;
 
 async function main(): Promise<void> {
+  validateProductionConfig();
+
   // Verify database connection
   try {
     await prisma.$connect();

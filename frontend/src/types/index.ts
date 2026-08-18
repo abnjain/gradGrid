@@ -110,13 +110,34 @@ export interface User {
   permissions?: string[];
   institutionId?: string;
   institutionName?: string;
+  organizationId?: string;
+  organizationName?: string;
   sessionId?: string;
   sessionName?: string;
+}
+
+export interface TenantContext {
+  organizationId: string;
+  organizationName: string;
+  institutionId: string;
+  institutionName: string;
+  institutionCode?: string;
+}
+
+export interface WorkspaceOrganization {
+  id: string;
+  name: string;
+  institutions: Array<{
+    id: string;
+    name: string;
+    code: string;
+  }>;
 }
 
 export interface AuthState {
   user: User | null;
   accessToken: string | null;
+  tenantContext: TenantContext | null;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
