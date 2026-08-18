@@ -96,9 +96,9 @@ export class AuthApiError extends Error {
 
 interface AuthContextValue extends AuthState {
   login: (credentials: LoginCredentials) => Promise<AuthUserType>;
-  registerInstitution: (data: RegisterInstitutionInput) => Promise<{ email: string }>;
+  registerInstitution: (data: RegisterInstitutionInput) => Promise<{ email: string; verificationOtp?: string }>;
   verifyEmail: (email: string, otp: string) => Promise<void>;
-  resendOtp: (email: string) => Promise<void>;
+  resendOtp: (email: string) => Promise<{ verificationOtp?: string }>;
   logout: () => Promise<void>;
   loadWorkspaces: () => Promise<WorkspaceOrganization[]>;
   selectContext: (organizationId: string, institutionId: string) => Promise<TenantContext>;
@@ -304,13 +304,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const registerInstitution = useCallback(async (data: RegisterInstitutionInput) => {
     try {
-      const res = await api.post<{ email: string; requiresEmailVerification: boolean }>(
+      const res = await api.post<{
+        email: string;
+        requiresEmailVerification: boolean;
+        verificationOtp?: string;
+      }>(
         '/auth/register-institution',
         data,
         false
       );
       if (!res.success || !res.data) throw res;
-      return { email: res.data.email };
+      return { email: res.data.email, verificationOtp: res.data.verificationOtp };
     } catch (err) {
       throwApiError(err, 'Sign up failed. Please try again.');
     }
@@ -327,8 +331,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resendOtp = useCallback(async (email: string) => {
     try {
-      const res = await api.post('/auth/resend-otp', { email }, false);
+      const res = await api.post<{ verificationOtp?: string }>('/auth/resend-otp', { email }, false);
       if (!res.success) throw res;
+      return { verificationOtp: res.data?.verificationOtp };
     } catch (err) {
       throw new Error(getApiErrorMessage(err, 'Could not resend code. Please try again.'));
     }

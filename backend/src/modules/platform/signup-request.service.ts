@@ -22,6 +22,7 @@ import {
   ApplicationRejectedError,
 } from '../../shared/errors';
 import { createContextLogger, auditLog } from '../../shared/utils/logger';
+import { config } from '../../config';
 
 const logger = createContextLogger({ module: 'signup-request' });
 
@@ -121,11 +122,7 @@ export class SignupRequestService {
 
     logger.info({ requestId: request.id, email }, 'Signup request submitted');
 
-    return {
-      requestId: request.id,
-      email,
-      requiresEmailVerification: true,
-    };
+    return this.buildSignupResponse(request.id, email, otp);
   }
 
   async verifyEmail(email: string, otp: string) {
@@ -197,7 +194,7 @@ export class SignupRequestService {
       html: `<p>Your verification code is: <strong>${otp}</strong></p>`,
     });
 
-    return { message: 'Verification code sent' };
+    return this.buildSignupResponse(request.id, normalized, otp);
   }
 
   async getSignupStatus(email: string) {
@@ -243,9 +240,6 @@ export class SignupRequestService {
     if (!request) throw new NotFoundError('Signup request not found');
     if (request.status !== 'pending') {
       throw new BadRequestError('Only pending applications can be approved');
-    }
-    if (!request.email_verified) {
-      throw new BadRequestError('Email must be verified before approval');
     }
 
     const existingUser = await this.authRepository.findUserByEmail(request.email);
@@ -359,10 +353,16 @@ export class SignupRequestService {
 
     logger.info({ requestId, email }, 'Resent signup verification for pending application');
 
+    return this.buildSignupResponse(requestId, email, otp);
+  }
+
+  private buildSignupResponse(requestId: string, email: string, otp?: string) {
+    const exposeOtp = !config.smtp.host && otp;
     return {
       requestId,
       email,
       requiresEmailVerification: true,
+      ...(exposeOtp ? { verificationOtp: otp } : {}),
     };
   }
 

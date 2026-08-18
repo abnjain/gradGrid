@@ -1,0 +1,3 @@
+curl -X POST https://gradgrid-api.onrender.com/api/v1/auth/register-institution \
+  -H 'content-type: application/json' \
+  -d '{"organizationName":"Test","institutionName":"Test","institutionCode":"ADV-03",...}'

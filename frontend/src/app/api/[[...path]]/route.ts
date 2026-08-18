@@ -5,6 +5,9 @@ import { NextRequest, NextResponse } from "next/server";
  * Browser calls same-origin /api/v1/*; this forwards to API_INTERNAL_URL.
  */
 
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
+
 const HOP_BY_HOP = new Set([
   "connection",
   "keep-alive",
@@ -15,6 +18,7 @@ const HOP_BY_HOP = new Set([
   "transfer-encoding",
   "upgrade",
   "host",
+  "content-length",
 ]);
 
 function getApiBase(): string | null {
@@ -44,25 +48,28 @@ async function proxy(request: NextRequest, path: string[]): Promise<NextResponse
 
   const headers = new Headers();
   request.headers.forEach((value, key) => {
-    if (!HOP_BY_HOP.has(key.toLowerCase())) {
+    const lower = key.toLowerCase();
+    if (!HOP_BY_HOP.has(lower)) {
       headers.set(key, value);
     }
   });
 
-  const init: RequestInit & { duplex?: "half" } = {
-    method: request.method,
-    headers,
-    redirect: "manual",
-  };
-
+  let body: string | undefined;
   if (request.method !== "GET" && request.method !== "HEAD") {
-    init.body = request.body;
-    init.duplex = "half";
+    body = await request.text();
+    if (!headers.has("content-type")) {
+      headers.set("content-type", "application/json");
+    }
   }
 
   let upstream: Response;
   try {
-    upstream = await fetch(targetUrl, init);
+    upstream = await fetch(targetUrl, {
+      method: request.method,
+      headers,
+      body,
+      redirect: "manual",
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Upstream API unreachable";
     return NextResponse.json(
@@ -76,18 +83,27 @@ async function proxy(request: NextRequest, path: string[]): Promise<NextResponse
       { status: 502 }
     );
   }
-  const responseHeaders = new Headers();
-  upstream.headers.forEach((value, key) => {
-    if (!HOP_BY_HOP.has(key.toLowerCase())) {
-      responseHeaders.append(key, value);
-    }
-  });
 
-  return new NextResponse(upstream.body, {
-    status: upstream.status,
-    statusText: upstream.statusText,
-    headers: responseHeaders,
-  });
+  const responseText = await upstream.text();
+  const contentType = upstream.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    return new NextResponse(responseText, {
+      status: upstream.status,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  return NextResponse.json(
+    {
+      success: false,
+      error: {
+        code: "API_UPSTREAM_ERROR",
+        message: responseText.trim() || upstream.statusText || "Upstream API error",
+      },
+    },
+    { status: upstream.status >= 400 ? upstream.status : 502 }
+  );
 }
 
 type RouteContext = { params: Promise<{ path?: string[] }> };

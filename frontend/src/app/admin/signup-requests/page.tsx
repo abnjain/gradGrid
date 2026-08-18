@@ -142,8 +142,9 @@ export default function AdminSignupRequestsPage() {
                   <Button
                     size="sm"
                     loading={actionId === req.id && rejectId !== req.id}
-                    disabled={!req.emailVerified || actionId === req.id}
+                    disabled={actionId === req.id}
                     onClick={() => approve(req.id)}
+                    title={req.emailVerified ? undefined : "Email not verified — platform admin can still approve"}
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     Approve

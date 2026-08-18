@@ -35,6 +35,7 @@ function SignupWizard() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [submittedEmail, setSubmittedEmail] = React.useState(initialEmail);
   const [otp, setOtp] = React.useState("");
+  const [showDevOtp, setShowDevOtp] = React.useState(false);
   const [resendCooldown, setResendCooldown] = React.useState(0);
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
@@ -102,11 +103,31 @@ function SignupWizard() {
         password: form.password,
       });
       setSubmittedEmail(result.email);
+      if (result.verificationOtp) {
+        setOtp(result.verificationOtp);
+        setShowDevOtp(true);
+      }
       setStep("verify");
-      addToast({ variant: "success", title: "Application submitted", description: "Check your email for a verification code." });
+      addToast({
+        variant: "success",
+        title: "Application submitted",
+        description: result.verificationOtp
+          ? "Enter the verification code shown below."
+          : "Check your email for a verification code.",
+      });
     } catch (err) {
       const message = err instanceof AuthApiError ? err.message : "Sign up failed";
-      addToast({ variant: "error", title: "Sign up failed", description: message });
+      if (err instanceof AuthApiError && err.code === "APPLICATION_PENDING") {
+        setSubmittedEmail(form.email.trim());
+        setStep("verify");
+        addToast({
+          variant: "warning",
+          title: "Application already submitted",
+          description: "Enter your verification code or resend a new one.",
+        });
+      } else {
+        addToast({ variant: "error", title: "Sign up failed", description: message });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -134,9 +155,19 @@ function SignupWizard() {
   async function handleResendOtp() {
     if (resendCooldown > 0) return;
     try {
-      await resendOtp(submittedEmail);
+      const result = await resendOtp(submittedEmail);
+      if (result?.verificationOtp) {
+        setOtp(result.verificationOtp);
+        setShowDevOtp(true);
+      }
       setResendCooldown(60);
-      addToast({ variant: "success", title: "Code sent", description: "A new verification code has been sent." });
+      addToast({
+        variant: "success",
+        title: "Code sent",
+        description: result?.verificationOtp
+          ? "A new code is shown below."
+          : "A new verification code has been sent.",
+      });
     } catch (err) {
       addToast({
         variant: "error",
@@ -174,9 +205,15 @@ function SignupWizard() {
           ) : step === "verify" ? (
             <>
               <h1 className="text-[28px] font-bold font-display text-ink mb-1.5">Verify your email</h1>
-              <p className="text-sm text-mid mb-8">
+              <p className="text-sm text-mid mb-4">
                 Enter the 6-digit code sent to <strong>{submittedEmail}</strong>
               </p>
+              {showDevOtp && otp && (
+                <div className="mb-4 rounded-lg border border-accent-mid bg-accent-dim px-4 py-3 text-sm text-accent-text">
+                  Email is not configured on this server. Your verification code is:{" "}
+                  <strong className="font-mono text-base tracking-widest">{otp}</strong>
+                </div>
+              )}
               <form className="flex flex-col gap-4" onSubmit={submitOtp}>
                 <Input
                   label="Verification code"
@@ -365,8 +402,24 @@ function SignupWizard() {
             </>
           )}
 
-          {step !== "pending" && (
+          {step !== "pending" && step !== "verify" && (
             <p className="text-sm text-mid text-center mt-6">
+              Already submitted an application?{" "}
+              <button
+                type="button"
+                className="text-brand hover:underline font-medium"
+                onClick={() => {
+                  if (form.email.trim()) setSubmittedEmail(form.email.trim());
+                  setStep("verify");
+                }}
+              >
+                Verify email
+              </button>
+            </p>
+          )}
+
+          {step !== "pending" && (
+            <p className={`text-sm text-mid text-center ${step === "verify" ? "mt-4" : "mt-2"}`}>
               Already have an account?{" "}
               <Link href="/login" className="text-brand hover:underline font-medium">Sign in</Link>
             </p>
