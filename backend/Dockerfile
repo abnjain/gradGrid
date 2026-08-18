@@ -18,10 +18,13 @@ RUN npx prisma generate && npm run build
 
 FROM base AS prod-deps
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev \
-  && npm install prisma@7.0.0 --no-save
+RUN npm ci --omit=dev
 COPY prisma ./prisma
-RUN npx prisma generate
+# Reuse generated client from build — avoids prisma CLI / client version mismatch
+COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
+# Prisma CLI needed at runtime for `prisma migrate deploy` in entrypoint
+RUN npm install prisma@$(node -pe "require('@prisma/client/package.json').version") --no-save
 
 FROM base AS runner
 ENV NODE_ENV=production
