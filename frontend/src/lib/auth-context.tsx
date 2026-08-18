@@ -5,36 +5,48 @@
  * - Access token is stored in React state (in-memory only)
  * - Refresh token is stored in an httpOnly cookie (set by backend)
  * - On mount, attempts a silent refresh using the cookie
- * - Exposes login, logout, and auth state via useAuth() hook
+ * - Exposes login, registerInstitution, logout, and auth state via useAuth() hook
  */
 
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { api, configureAuth } from './api-client';
-import type { AuthState, User } from '@/types';
+import { api, configureAuth, getApiError, getApiErrorMessage } from './api-client';
+import type { AuthState, AuthUserType, User, UserRole } from '@/types';
 
-/* ─── Types ─── */
+export interface RegisterInstitutionInput {
+  organizationName: string;
+  institutionName: string;
+  institutionCode: string;
+  city?: string;
+  state?: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  password: string;
+}
 
 interface LoginCredentials {
   email: string;
   password: string;
 }
 
+interface AuthUserPayload {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  userType: string;
+  roleName?: string;
+  permissions?: string[];
+  sessionId?: string;
+  institutionId?: string | null;
+}
+
 interface LoginResponseData {
-  user: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    userType: string;
-    roleName: string;
-    permissions: string[];
-    sessionId?: string;
-  };
-  tokens: {
-    accessToken: string;
-  };
+  user: AuthUserPayload;
+  tokens: { accessToken: string };
 }
 
 /** Shape returned by GET /auth/me (used for silent refresh + profile prefill). */
@@ -50,17 +62,69 @@ interface MeResponseData {
     user_type?: string;
     permissions?: string[];
     sessionId?: string;
+    institutionId?: string | null;
   };
 }
 
+export class AuthApiError extends Error {
+  code: string;
+  constructor(code: string, message: string) {
+    super(message);
+    this.code = code;
+    this.name = 'AuthApiError';
+  }
+}
+
 interface AuthContextValue extends AuthState {
-  login: (credentials: LoginCredentials) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<AuthUserType>;
+  registerInstitution: (data: RegisterInstitutionInput) => Promise<{ email: string }>;
+  verifyEmail: (email: string, otp: string) => Promise<void>;
+  resendOtp: (email: string) => Promise<void>;
   logout: () => Promise<void>;
   /** Update the in-memory user after profile changes (e.g. name/phone). */
   updateUser: (patch: Partial<Pick<User, "name" | "email">>) => void;
 }
 
-/* ─── Context ─── */
+/* ─── Helpers ─── */
+
+function normalizeUserType(value?: string | null): AuthUserType {
+  return value === 'platform' ? 'platform' : 'institution';
+}
+
+function mapAuthUser(payload: AuthUserPayload): User {
+  const userType = normalizeUserType(payload.userType);
+  return {
+    id: payload.id,
+    name: `${payload.firstName} ${payload.lastName}`.trim(),
+    email: payload.email,
+    userType,
+    roleName: payload.roleName,
+    // Default role until RBAC assigns granular roles
+    role: (userType === 'platform' ? 'platform_admin' : 'owner') as UserRole,
+    permissions: payload.permissions || [],
+    institutionId: payload.institutionId || undefined,
+    sessionId: payload.sessionId,
+  };
+}
+
+function mapMeUser(u: MeResponseData['user']): User {
+  const userType = normalizeUserType(u.userType || u.user_type);
+  return {
+    id: u.id,
+    name: `${u.firstName || u.first_name || ''} ${u.lastName || u.last_name || ''}`.trim(),
+    email: u.email,
+    userType,
+    role: (userType === 'platform' ? 'platform_admin' : 'owner') as UserRole,
+    permissions: u.permissions || [],
+    institutionId: u.institutionId || undefined,
+    sessionId: u.sessionId,
+  };
+}
+
+function throwApiError(err: unknown, fallback: string): never {
+  const { code, message } = getApiError(err, fallback);
+  throw new AuthApiError(code, message);
+}
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -68,9 +132,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
   return ctx;
 }
 
@@ -124,20 +186,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Step 2: Fetch the user profile with the new token
         const meRes = await api.get<MeResponseData>('/auth/me', true);
-
         if (cancelled) return;
 
         if (meRes.success && meRes.data?.user) {
-          const u = meRes.data.user;
           setState({
-            user: {
-              id: u.id,
-              name: `${u.firstName || u.first_name || ''} ${u.lastName || u.last_name || ''}`.trim(),
-              email: u.email,
-              role: (u.userType || u.user_type || 'institution') as User['role'],
-              permissions: u.permissions || [],
-              sessionId: u.sessionId,
-            },
+            user: mapMeUser(meRes.data.user),
             accessToken,
             isAuthenticated: true,
             isLoading: false,
@@ -145,7 +198,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
       } catch {
-        // No valid session — stay unauthenticated
+        // No valid session
       }
 
       if (!cancelled) {
@@ -154,62 +207,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     trySilentRefresh();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
-  // ── Login ──
-  const login = useCallback(async (credentials: LoginCredentials) => {
-    const res = await api.post<LoginResponseData>('/auth/login', credentials, false);
+  const applySession = useCallback((user: User, accessToken: string) => {
+    tokenRef.current = accessToken;
+    setState({ user, accessToken, isAuthenticated: true, isLoading: false });
+  }, []);
 
-    if (!res.success || !res.data) {
-      throw res.error || new Error('Login failed');
+  const login = useCallback(async (credentials: LoginCredentials): Promise<AuthUserType> => {
+    try {
+      const res = await api.post<LoginResponseData>('/auth/login', credentials, false);
+      if (!res.success || !res.data) throw res;
+      const user = mapAuthUser(res.data.user);
+      applySession(user, res.data.tokens.accessToken);
+      return user.userType;
+    } catch (err) {
+      throwApiError(err, 'Invalid email or password');
     }
+  }, [applySession]);
 
-    const { user, tokens } = res.data;
-    tokenRef.current = tokens.accessToken;
-
-    setState({
-      user: {
-        id: user.id,
-        name: `${user.firstName} ${user.lastName}`,
-        email: user.email,
-        role: user.userType as User['role'],
-        permissions: user.permissions || [],
-        sessionId: user.sessionId,
-      },
-      accessToken: tokens.accessToken,
-      isAuthenticated: true,
-      isLoading: false,
-    });
+  const registerInstitution = useCallback(async (data: RegisterInstitutionInput) => {
+    try {
+      const res = await api.post<{ email: string; requiresEmailVerification: boolean }>(
+        '/auth/register-institution',
+        data,
+        false
+      );
+      if (!res.success || !res.data) throw res;
+      return { email: res.data.email };
+    } catch (err) {
+      throwApiError(err, 'Sign up failed. Please try again.');
+    }
   }, []);
 
-  // ── Logout ──
+  const verifyEmail = useCallback(async (email: string, otp: string) => {
+    try {
+      const res = await api.post('/auth/verify-email', { email, otp }, false);
+      if (!res.success) throw res;
+    } catch (err) {
+      throwApiError(err, 'Verification failed. Please try again.');
+    }
+  }, []);
+
+  const resendOtp = useCallback(async (email: string) => {
+    try {
+      const res = await api.post('/auth/resend-otp', { email }, false);
+      if (!res.success) throw res;
+    } catch (err) {
+      throw new Error(getApiErrorMessage(err, 'Could not resend code. Please try again.'));
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await api.post('/auth/logout');
     } catch {
-      // Proceed even if the server call fails
+      // proceed
     }
-
     tokenRef.current = null;
-    setState({
-      user: null,
-      accessToken: null,
-      isAuthenticated: false,
-      isLoading: false,
-    });
+    setState({ user: null, accessToken: null, isAuthenticated: false, isLoading: false });
   }, []);
 
-  // ── Update in-memory user (after profile edits) ──
-  const updateUser = useCallback((patch: Partial<Pick<User, "name" | "email">>) => {
+  const updateUser = useCallback((patch: Partial<Pick<User, 'name' | 'email'>>) => {
     setState((prev) => (prev.user ? { ...prev, user: { ...prev.user, ...patch } } : prev));
   }, []);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout, updateUser }}>
+    <AuthContext.Provider
+      value={{ ...state, login, registerInstitution, verifyEmail, resendOtp, logout, updateUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

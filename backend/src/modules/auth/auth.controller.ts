@@ -9,10 +9,12 @@
 import { Request, Response, NextFunction } from 'express';
 import httpStatus from 'http-status';
 import { AuthService } from './auth.service';
+import { SignupRequestService } from '../platform/signup-request.service';
 import { config } from '../../config';
 import { AuthenticatedRequest } from '../../shared/types';
 
 const authService = new AuthService();
+const signupService = new SignupRequestService();
 
 /**
  * Cookie configuration for the refresh token.
@@ -60,7 +62,61 @@ export class AuthController {
   }
 
   /**
-   * POST /api/v1/auth/register
+   * POST /api/v1/auth/register-institution
+   * Submit a self-service institution signup application (pending admin approval).
+   */
+  async registerInstitution(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await signupService.submitRequest(req.body);
+      res.status(httpStatus.CREATED).json({
+        success: true,
+        data: result,
+        message: 'Application submitted. Please verify your email.',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/v1/auth/verify-email
+   */
+  async verifyEmail(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await signupService.verifyEmail(req.body.email, req.body.otp);
+      res.status(httpStatus.OK).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/v1/auth/resend-otp
+   */
+  async resendOtp(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await signupService.resendOtp(req.body.email);
+      res.status(httpStatus.OK).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * GET /api/v1/auth/signup-status?email=
+   */
+  async signupStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const email = String(req.query.email || '');
+      const result = await signupService.getSignupStatus(email);
+      res.status(httpStatus.OK).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * @deprecated Use registerInstitution
    */
   async register(req: Request, res: Response, next: NextFunction) {
     try {

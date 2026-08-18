@@ -168,3 +168,22 @@ export function requireInstitutionScope(
 
   next();
 }
+
+/**
+ * Require an authenticated platform user (super-admin portal).
+ * Used until RBAC permission resolution is fully wired.
+ */
+export function requirePlatformUser(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): void {
+  const user = (req as AuthenticatedRequest).user;
+  if (!user) {
+    throw new UnauthorizedError('Authentication required');
+  }
+  if (user.userType !== 'platform') {
+    throw new ForbiddenError('Platform access required');
+  }
+  next();
+}

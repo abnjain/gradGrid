@@ -96,6 +96,39 @@ export interface ApiResponse<T = unknown> {
   };
 }
 
+/** Extract a user-facing message from a thrown API response or Error. */
+export function getApiErrorMessage(
+  err: unknown,
+  fallback = "Something went wrong. Please try again."
+): string {
+  return getApiError(err, fallback).message;
+}
+
+/** Extract error code and message from a thrown API response. */
+export function getApiError(
+  err: unknown,
+  fallback = "Something went wrong. Please try again."
+): { code: string; message: string } {
+  if (!err || typeof err !== "object") {
+    return { code: "UNKNOWN", message: fallback };
+  }
+
+  const body = err as Partial<ApiResponse>;
+  if (body.error?.message) {
+    return {
+      code: body.error.code || "UNKNOWN",
+      message: body.error.message,
+    };
+  }
+
+  const direct = err as { message?: string; code?: string };
+  if (typeof direct.message === "string" && direct.message.length > 0) {
+    return { code: direct.code || "UNKNOWN", message: direct.message };
+  }
+
+  return { code: "UNKNOWN", message: fallback };
+}
+
 /**
  * Core request function.
  */

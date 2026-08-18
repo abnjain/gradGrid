@@ -95,11 +95,17 @@ export interface NavGroup {
 // User & Auth Types
 // ============================================================================
 
+export type AuthUserType = "platform" | "institution";
+
 export interface User {
   id: string;
   name: string;
   email: string;
+  /** Granular role (owner, teacher, etc.) — populated when RBAC is wired. */
   role: UserRole;
+  /** Portal boundary: institution staff vs platform staff. */
+  userType: AuthUserType;
+  roleName?: string;
   avatar?: string;
   permissions?: string[];
   institutionId?: string;

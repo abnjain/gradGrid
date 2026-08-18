@@ -18,16 +18,20 @@ import {
   ConflictError,
   BadRequestError,
   InternalError,
+  EmailNotVerifiedError,
 } from '../../shared/errors';
+import { SignupRequestService } from '../platform/signup-request.service';
 import { createContextLogger, auditLog } from '../../shared/utils/logger';
 
 const logger = createContextLogger({ module: 'auth' });
 
 export class AuthService {
   private repository: AuthRepository;
+  private signupService: SignupRequestService;
 
   constructor() {
     this.repository = new AuthRepository();
+    this.signupService = new SignupRequestService();
   }
 
   /**
@@ -39,6 +43,8 @@ export class AuthService {
     userAgent?: string
   ): Promise<LoginResponse> {
     logger.info({ email: data.email }, 'Login attempt');
+
+    await this.signupService.checkLoginBlocked(data.email);
 
     const user = await this.repository.findUserByEmail(data.email);
     if (!user) {
@@ -57,6 +63,10 @@ export class AuthService {
 
     if (!user.is_active) {
       throw new UnauthorizedError('Account is deactivated');
+    }
+
+    if (!user.email_verified) {
+      throw new EmailNotVerifiedError();
     }
 
     // Generate tokens

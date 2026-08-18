@@ -169,6 +169,8 @@ model users {
   // marked attendance
   attendance_sessions      attendance_sessions[]
   teacher_attendance_records_created teacher_attendance_records[] @relation("teacher_attendance_marked_by")
+  signup_requests_reviewed   institution_signup_requests[] @relation("signup_reviewer")
+  signup_requests_created  institution_signup_requests[] @relation("signup_created_user")
 
   @@index([institution_id])
   @@map("users")
@@ -256,6 +258,40 @@ model password_resets {
 
   @@index([user_id])
   @@map("password_resets")
+}
+
+/// Self-service institution signup applications (pending admin approval).
+model institution_signup_requests {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  status            String    @default("pending") @db.VarChar(20)
+  organization_name String    @db.VarChar(200)
+  institution_name  String    @db.VarChar(200)
+  institution_code  String    @db.VarChar(20)
+  city              String?   @db.VarChar(100)
+  state             String?   @db.VarChar(100)
+  first_name        String    @db.VarChar(100)
+  last_name         String    @db.VarChar(100)
+  email             String    @db.VarChar(255)
+  phone             String?   @db.VarChar(20)
+  password_hash     String    @db.Text
+  email_verified    Boolean   @default(false)
+  otp_hash          String?   @db.Text
+  otp_expires_at    DateTime? @db.Timestamptz
+  reviewed_by       String?   @db.Uuid
+  reviewed_at       DateTime? @db.Timestamptz
+  rejection_reason  String?   @db.Text
+  created_user_id   String?   @db.Uuid
+  created_at        DateTime  @default(now()) @db.Timestamptz
+  updated_at        DateTime  @default(now()) @db.Timestamptz
+
+  reviewer     users? @relation("signup_reviewer", fields: [reviewed_by], references: [id])
+  created_user users? @relation("signup_created_user", fields: [created_user_id], references: [id])
+
+  @@index([email])
+  @@index([phone])
+  @@index([status])
+  @@index([institution_code])
+  @@map("institution_signup_requests")
 }
 
 // ─────────────────────────────────────────────────────────────

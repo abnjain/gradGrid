@@ -119,6 +119,7 @@ const adminNav: NavGroup[] = [
   },
   {
     items: [
+      { label: "Signup Requests", href: "/admin/signup-requests", icon: <UserPlus className="w-4 h-4" /> },
       { label: "Platform Users", href: "/admin/users", icon: <UserCog className="w-4 h-4" /> },
     ],
   },

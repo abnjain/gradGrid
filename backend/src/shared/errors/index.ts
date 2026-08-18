@@ -55,8 +55,8 @@ export class ValidationError extends AppError {
 }
 
 export class ConflictError extends AppError {
-  constructor(message: string = 'Resource already exists') {
-    super(httpStatus.CONFLICT, message, 'CONFLICT');
+  constructor(message: string = 'Resource already exists', code: string = 'CONFLICT') {
+    super(httpStatus.CONFLICT, message, code);
   }
 }
 
@@ -69,5 +69,23 @@ export class BadRequestError extends AppError {
 export class InternalError extends AppError {
   constructor(message: string = 'Internal server error') {
     super(httpStatus.INTERNAL_SERVER_ERROR, message, 'INTERNAL_ERROR', false);
+  }
+}
+
+export class ApplicationPendingError extends AppError {
+  constructor(message: string = 'Your signup application is pending admin approval') {
+    super(httpStatus.FORBIDDEN, message, 'APPLICATION_PENDING');
+  }
+}
+
+export class ApplicationRejectedError extends AppError {
+  constructor(message: string = 'Your signup application was rejected. You may submit a new application.') {
+    super(httpStatus.FORBIDDEN, message, 'APPLICATION_REJECTED');
+  }
+}
+
+export class EmailNotVerifiedError extends AppError {
+  constructor(message: string = 'Please verify your email before signing in') {
+    super(httpStatus.FORBIDDEN, message, 'EMAIL_NOT_VERIFIED');
   }
 }
