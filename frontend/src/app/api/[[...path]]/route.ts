@@ -63,25 +63,36 @@ async function proxy(request: NextRequest, path: string[]): Promise<NextResponse
   }
 
   let upstream: Response;
+  const controller = new AbortController();
+  const timeoutMs = 25_000;
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     upstream = await fetch(targetUrl, {
       method: request.method,
       headers,
       body,
       redirect: "manual",
+      signal: controller.signal,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Upstream API unreachable";
+    const isTimeout = error instanceof Error && error.name === "AbortError";
     return NextResponse.json(
       {
         success: false,
         error: {
-          code: "API_PROXY_ERROR",
-          message,
+          code: isTimeout ? "API_COLD_START" : "API_PROXY_ERROR",
+          message: isTimeout
+            ? "Server is waking up (Render free tier). Wait 30–60 seconds and try again."
+            : error instanceof Error
+              ? error.message
+              : "Upstream API unreachable",
         },
       },
-      { status: 502 }
+      { status: isTimeout ? 503 : 502 }
     );
+  } finally {
+    clearTimeout(timer);
   }
 
   const responseText = await upstream.text();

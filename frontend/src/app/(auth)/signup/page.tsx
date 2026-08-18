@@ -8,6 +8,7 @@ import { Input, type InputHandle } from "@/components/ui/input";
 import { PasswordStrength } from "@/components/ui/password-strength";
 import { useAuth, AuthApiError } from "@/lib/auth-context";
 import { useToast } from "@/components/ui/toast";
+import { warmApi } from "@/lib/warm-api";
 import {
   Lock,
   Eye,
@@ -65,6 +66,12 @@ function SignupWizard() {
   const passwordRef = React.useRef<InputHandle>(null);
   const confirmPasswordRef = React.useRef<InputHandle>(null);
 
+  const [isWarming, setIsWarming] = React.useState(false);
+
+  React.useEffect(() => {
+    void warmApi();
+  }, []);
+
   React.useEffect(() => {
     if (resendCooldown <= 0) return;
     const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
@@ -90,6 +97,18 @@ function SignupWizard() {
 
     setIsLoading(true);
     try {
+      setIsWarming(true);
+      const ready = await warmApi(90_000);
+      setIsWarming(false);
+      if (!ready) {
+        addToast({
+          variant: "warning",
+          title: "Server is starting",
+          description: "Render free tier can take up to 60s on first request. Please try again in a moment.",
+        });
+        return;
+      }
+
       const result = await registerInstitution({
         organizationName: form.organizationName.trim(),
         institutionName: form.institutionName.trim(),
@@ -125,10 +144,17 @@ function SignupWizard() {
           title: "Application already submitted",
           description: "Enter your verification code or resend a new one.",
         });
+      } else if (err instanceof AuthApiError && err.code === "API_COLD_START") {
+        addToast({
+          variant: "warning",
+          title: "Server is waking up",
+          description: err.message,
+        });
       } else {
         addToast({ variant: "error", title: "Sign up failed", description: message });
       }
     } finally {
+      setIsWarming(false);
       setIsLoading(false);
     }
   }
@@ -393,7 +419,7 @@ function SignupWizard() {
                       Back
                     </Button>
                     <Button type="button" size="lg" className="flex-[2]" loading={isLoading} onClick={submitApplication}>
-                      Submit application
+                      {isWarming ? "Starting server…" : "Submit application"}
                       <ArrowRight className="w-4 h-4" />
                     </Button>
                   </div>

@@ -6,7 +6,7 @@
 
 import bcrypt from 'bcryptjs';
 
-const SALT_ROUNDS = process.env.NODE_ENV === 'production' ? 10 : 12;
+const SALT_ROUNDS = process.env.NODE_ENV === 'production' ? 8 : 12;
 
 /**
  * Hash a plaintext password using bcrypt.

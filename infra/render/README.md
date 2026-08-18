@@ -97,6 +97,8 @@ Browser → gradgrid-web (/api/v1/* same origin)
 ## Free tier limitations
 
 - **Cold starts** — services spin down after ~15 min idle (~30–60s wake time)
+- **30s web timeout** — `gradgrid-web` cannot wait longer than ~30s for `gradgrid-api`. Wake the API first: open `https://gradgrid-api.onrender.com/health` and wait for JSON, then submit signup
+- **Keep-alive** — use [UptimeRobot](https://uptimerobot.com) (free) to ping `/health` every 14 minutes on both services
 - **Postgres** — free database may expire after 90 days; export or upgrade before expiry
 - **No Redis** — app runs without `REDIS_URL` (DB fallback for permissions)
 - **750 hours/month** per workspace — enough for demo/staging
