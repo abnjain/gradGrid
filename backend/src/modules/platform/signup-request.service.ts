@@ -63,12 +63,18 @@ export class SignupRequestService {
 
     const pendingEmail = await this.repository.findPendingByEmail(email);
     if (pendingEmail) {
+      if (!pendingEmail.email_verified) {
+        return this.resendVerificationForPending(pendingEmail.id, email);
+      }
       throw new ApplicationPendingError('An application with this email is already under review');
     }
 
     if (phone) {
       const pendingPhone = await this.repository.findPendingByPhone(phone);
       if (pendingPhone) {
+        if (!pendingPhone.email_verified && pendingPhone.email === email) {
+          return this.resendVerificationForPending(pendingPhone.id, email);
+        }
         throw new ApplicationPendingError('An application with this phone number is already under review');
       }
     }
@@ -334,6 +340,29 @@ export class SignupRequestService {
         throw new ApplicationRejectedError();
       }
     }
+  }
+
+  private async resendVerificationForPending(requestId: string, email: string) {
+    const otp = generateOtp();
+    const otp_hash = await hashPassword(otp);
+    const otp_expires_at = new Date(Date.now() + OTP_TTL_MS);
+
+    await this.repository.updateOtp(requestId, otp_hash, otp_expires_at);
+
+    await sendEmail({
+      to: email,
+      subject: 'Verify your email — GradGrid signup',
+      text: `Your GradGrid verification code is: ${otp}\n\nThis code expires in 10 minutes.`,
+      html: `<p>Your GradGrid verification code is: <strong>${otp}</strong></p><p>This code expires in 10 minutes.</p>`,
+    });
+
+    logger.info({ requestId, email }, 'Resent signup verification for pending application');
+
+    return {
+      requestId,
+      email,
+      requiresEmailVerification: true,
+    };
   }
 
   private toPublicRequest(r: {
