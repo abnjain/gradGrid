@@ -80,6 +80,11 @@ services:
         value: 0.0.0.0
       - key: NEXT_PUBLIC_API_URL
         value: /api/v1
+      - key: NEXT_PUBLIC_DIRECT_API_URL
+        fromService:
+          type: web
+          name: gradgrid-api
+          envVarKey: RENDER_EXTERNAL_URL
       - key: NEXT_PUBLIC_SITE_URL
         fromService:
           type: web

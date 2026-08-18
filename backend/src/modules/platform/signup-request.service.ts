@@ -48,6 +48,7 @@ export class SignupRequestService {
 
   async submitRequest(data: RegisterInstitutionInput) {
     const email = data.email.trim().toLowerCase();
+    logger.info({ email, institutionCode: data.institutionCode }, 'Signup request received');
     const phone = data.phone?.trim() || null;
     const institutionCode = normalizeInstitutionCode(data.institutionCode);
 

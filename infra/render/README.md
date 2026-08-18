@@ -85,19 +85,22 @@ Without SMTP, emails are logged server-side (password reset, OTP).
 ## How auth works on Render
 
 ```text
-Browser → gradgrid-web (/api/v1/* same origin)
+Browser → gradgrid-web (/api/v1/* same origin)  [login, refresh, authenticated calls]
               ↓ runtime proxy
          gradgrid-api (internal Render URL)
+
+Browser → gradgrid-api directly  [register, verify-email, resend-otp]
 ```
 
 - Frontend proxies `/api/*` to the API service ([`frontend/src/app/api/[[...path]]/route.ts`](../../frontend/src/app/api/[[...path]]/route.ts))
+- **Signup/auth public endpoints** call `NEXT_PUBLIC_DIRECT_API_URL` directly to avoid Render's ~30s web proxy timeout ([`frontend/src/lib/api-client.ts`](../../frontend/src/lib/api-client.ts))
 - Refresh cookies use `path=/` and `SameSite=lax` for same-origin proxying
-- `NEXT_PUBLIC_API_URL=/api/v1` (no separate API subdomain needed)
+- `NEXT_PUBLIC_API_URL=/api/v1` (no separate API subdomain needed for authenticated calls)
 
 ## Free tier limitations
 
 - **Cold starts** — services spin down after ~15 min idle (~30–60s wake time)
-- **30s web timeout** — `gradgrid-web` cannot wait longer than ~30s for `gradgrid-api`. Wake the API first: open `https://gradgrid-api.onrender.com/health` and wait for JSON, then submit signup
+- **30s web timeout** — `gradgrid-web` proxy cannot wait longer than ~30s. Signup uses direct API URL (`NEXT_PUBLIC_DIRECT_API_URL`); login stays on same-origin proxy
 - **Keep-alive** — use [UptimeRobot](https://uptimerobot.com) (free) to ping `/health` every 14 minutes on both services
 - **Postgres** — free database may expire after 90 days; export or upgrade before expiry
 - **No Redis** — app runs without `REDIS_URL` (DB fallback for permissions)

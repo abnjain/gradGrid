@@ -16,6 +16,13 @@ let onUnauthenticated: OnUnauthenticated = () => {};
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 
+/** Direct API URL for public auth calls — bypasses gradgrid-web 30s proxy timeout on Render. */
+export function getDirectApiBase(): string | null {
+  const raw = process.env.NEXT_PUBLIC_DIRECT_API_URL?.trim();
+  if (!raw) return null;
+  return `${raw.replace(/\/$/, '')}/api/v1`;
+}
+
 // Track refresh state to avoid concurrent refresh calls
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
@@ -135,9 +142,11 @@ export function getApiError(
 async function request<T>(
   endpoint: string,
   options: RequestInit = {},
-  requireAuth = true
+  requireAuth = true,
+  useDirectPublic = false
 ): Promise<ApiResponse<T>> {
-  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+  const base = useDirectPublic && getDirectApiBase() ? getDirectApiBase()! : API_BASE;
+  const url = endpoint.startsWith('http') ? endpoint : `${base}${endpoint}`;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
@@ -153,7 +162,7 @@ async function request<T>(
   let res = await fetch(url, {
     ...options,
     headers,
-    credentials: 'include',
+    credentials: useDirectPublic ? 'omit' : 'include',
   });
 
   // On 401, attempt token refresh and retry once
@@ -167,7 +176,7 @@ async function request<T>(
       res = await fetch(url, {
         ...options,
         headers,
-        credentials: 'include',
+        credentials: useDirectPublic ? 'omit' : 'include',
       });
     } else {
       onUnauthenticated();
@@ -205,6 +214,19 @@ export const api = {
         body: data ? JSON.stringify(data) : undefined,
       },
       requireAuth
+    );
+  },
+
+  /** Public auth endpoints — call API directly when NEXT_PUBLIC_DIRECT_API_URL is set (Render). */
+  postPublic<T>(endpoint: string, data?: unknown) {
+    return request<T>(
+      endpoint,
+      {
+        method: 'POST',
+        body: data ? JSON.stringify(data) : undefined,
+      },
+      false,
+      true
     );
   },
 

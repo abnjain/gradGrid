@@ -304,15 +304,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const registerInstitution = useCallback(async (data: RegisterInstitutionInput) => {
     try {
-      const res = await api.post<{
+      const res = await api.postPublic<{
         email: string;
         requiresEmailVerification: boolean;
         verificationOtp?: string;
-      }>(
-        '/auth/register-institution',
-        data,
-        false
-      );
+      }>('/auth/register-institution', data);
       if (!res.success || !res.data) throw res;
       return { email: res.data.email, verificationOtp: res.data.verificationOtp };
     } catch (err) {
@@ -322,7 +318,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const verifyEmail = useCallback(async (email: string, otp: string) => {
     try {
-      const res = await api.post('/auth/verify-email', { email, otp }, false);
+      const res = await api.postPublic('/auth/verify-email', { email, otp });
       if (!res.success) throw res;
     } catch (err) {
       throwApiError(err, 'Verification failed. Please try again.');
@@ -331,7 +327,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resendOtp = useCallback(async (email: string) => {
     try {
-      const res = await api.post<{ verificationOtp?: string }>('/auth/resend-otp', { email }, false);
+      const res = await api.postPublic<{ verificationOtp?: string }>('/auth/resend-otp', { email });
       if (!res.success) throw res;
       return { verificationOtp: res.data?.verificationOtp };
     } catch (err) {
