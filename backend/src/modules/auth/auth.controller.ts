@@ -18,9 +18,9 @@ const authService = new AuthService();
 const signupService = new SignupRequestService();
 const tenantContextService = new TenantContextService();
 
-function getRefreshCookieOptions() {
+function getRefreshCookieOptions(overrides?: { path?: string }) {
   const defaultPath = `${config.api.prefix}/auth/refresh`;
-  const path = config.cookies.path || defaultPath;
+  const path = overrides?.path ?? (config.cookies.path || defaultPath);
   const sameSite =
     config.cookies.sameSite || (config.isProd ? 'strict' : 'lax');
 
@@ -31,6 +31,17 @@ function getRefreshCookieOptions() {
     path,
     maxAge: 7 * 24 * 60 * 60 * 1000,
   };
+}
+
+function clearRefreshTokenCookies(res: Response) {
+  const paths = new Set<string>([
+    config.cookies.path || '/',
+    `${config.api.prefix}/auth/refresh`,
+    '/',
+  ]);
+  for (const path of paths) {
+    res.clearCookie('refreshToken', getRefreshCookieOptions({ path }));
+  }
 }
 
 export class AuthController {
@@ -183,8 +194,8 @@ export class AuthController {
       // Deactivate the session server-side
       await authService.logout(sessionId, userId, userType);
 
-      // Clear the refresh token cookie
-      res.clearCookie('refreshToken', getRefreshCookieOptions());
+      // Clear the refresh token cookie (all known paths)
+      clearRefreshTokenCookies(res);
 
       res.status(httpStatus.OK).json({
         success: true,

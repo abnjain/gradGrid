@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { REFRESH_COOKIE_NAME } from "@/lib/auth-routes";
 
 /**
  * Runtime API proxy for Render (and any split-host deployment).
@@ -21,11 +22,61 @@ const HOP_BY_HOP = new Set([
   "content-length",
 ]);
 
+/** Cookie paths used historically for the refresh token — clear all on logout. */
+const REFRESH_COOKIE_PATHS = ["/", "/api/v1/auth/refresh"] as const;
+
 function getApiBase(): string | null {
   const base = process.env.API_INTERNAL_URL?.replace(/\/$/, "");
   if (base) return base;
   if (process.env.NODE_ENV === "development") return "http://localhost:4000";
   return null;
+}
+
+function appendUpstreamSetCookies(response: NextResponse, upstream: Response) {
+  const setCookies =
+    typeof upstream.headers.getSetCookie === "function"
+      ? upstream.headers.getSetCookie()
+      : [];
+
+  if (setCookies.length > 0) {
+    for (const cookie of setCookies) {
+      response.headers.append("Set-Cookie", cookie);
+    }
+    return;
+  }
+
+  const raw = upstream.headers.get("set-cookie");
+  if (raw) {
+    response.headers.append("Set-Cookie", raw);
+  }
+}
+
+function clearRefreshCookiesOnResponse(response: NextResponse) {
+  for (const path of REFRESH_COOKIE_PATHS) {
+    response.cookies.set(REFRESH_COOKIE_NAME, "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path,
+      maxAge: 0,
+    });
+  }
+}
+
+function buildJsonResponse(
+  upstream: Response,
+  responseText: string,
+  clearRefreshCookie: boolean
+): NextResponse {
+  const response = new NextResponse(responseText, {
+    status: upstream.status,
+    headers: { "content-type": "application/json" },
+  });
+  appendUpstreamSetCookies(response, upstream);
+  if (clearRefreshCookie) {
+    clearRefreshCookiesOnResponse(response);
+  }
+  return response;
 }
 
 async function proxy(request: NextRequest, path: string[]): Promise<NextResponse> {
@@ -97,12 +148,12 @@ async function proxy(request: NextRequest, path: string[]): Promise<NextResponse
 
   const responseText = await upstream.text();
   const contentType = upstream.headers.get("content-type") || "";
+  const isLogout =
+    request.method === "POST" &&
+    path.join("/") === "v1/auth/logout";
 
   if (contentType.includes("application/json")) {
-    return new NextResponse(responseText, {
-      status: upstream.status,
-      headers: { "content-type": "application/json" },
-    });
+    return buildJsonResponse(upstream, responseText, isLogout);
   }
 
   return NextResponse.json(

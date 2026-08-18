@@ -62,6 +62,7 @@ function SignupWizard() {
   const firstNameRef = React.useRef<InputHandle>(null);
   const lastNameRef = React.useRef<InputHandle>(null);
   const emailRef = React.useRef<InputHandle>(null);
+  const verifyEmailRef = React.useRef<InputHandle>(null);
   const phoneRef = React.useRef<InputHandle>(null);
   const passwordRef = React.useRef<InputHandle>(null);
   const confirmPasswordRef = React.useRef<InputHandle>(null);
@@ -159,15 +160,87 @@ function SignupWizard() {
     }
   }
 
+  const emailChanged =
+    submittedEmail.trim().length > 0 &&
+    form.email.trim().toLowerCase() !== submittedEmail.trim().toLowerCase();
+
+  const hasSignupPayload =
+    Boolean(form.organizationName.trim()) &&
+    Boolean(form.institutionName.trim()) &&
+    Boolean(form.institutionCode.trim()) &&
+    Boolean(form.firstName.trim()) &&
+    Boolean(form.lastName.trim()) &&
+    Boolean(form.password);
+
+  function handleVerifyEmailChange(value: string) {
+    setForm((prev) => ({ ...prev, email: value }));
+    if (submittedEmail && value.trim().toLowerCase() !== submittedEmail.trim().toLowerCase()) {
+      setOtp("");
+      setShowDevOtp(false);
+    }
+  }
+
+  async function registerOrResendForEmail(email: string) {
+    const changed =
+      submittedEmail.trim().length > 0 &&
+      email.trim().toLowerCase() !== submittedEmail.trim().toLowerCase();
+
+    if (changed) {
+      if (!hasSignupPayload) {
+        addToast({
+          variant: "error",
+          title: "Cannot change email",
+          description: "Start a new application to register with a different email address.",
+        });
+        return null;
+      }
+      const ready = await warmApi(90_000);
+      if (!ready) {
+        addToast({
+          variant: "warning",
+          title: "Server is starting",
+          description: "Please wait a moment and try again.",
+        });
+        return null;
+      }
+      return registerInstitution({
+        organizationName: form.organizationName.trim(),
+        institutionName: form.institutionName.trim(),
+        institutionCode: form.institutionCode.trim().toUpperCase(),
+        city: form.city.trim() || undefined,
+        state: form.state.trim() || undefined,
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        email,
+        phone: form.phone.trim() || undefined,
+        password: form.password,
+      });
+    }
+    return resendOtp(email);
+  }
+
   async function submitOtp(e: React.FormEvent) {
     e.preventDefault();
+    if (!(verifyEmailRef.current?.validate() ?? true)) return;
+    const email = form.email.trim();
     if (!/^\d{6}$/.test(otp)) {
       addToast({ variant: "error", title: "Invalid code", description: "Enter the 6-digit code from your email." });
       return;
     }
+    if (emailChanged) {
+      addToast({
+        variant: "warning",
+        title: "Email changed",
+        description: hasSignupPayload
+          ? "Resend the code to your new email address before verifying."
+          : "Resend the code to this email, or start a new application with the updated address.",
+      });
+      return;
+    }
     setIsLoading(true);
     try {
-      await verifyEmail(submittedEmail, otp);
+      await verifyEmail(email, otp);
+      setSubmittedEmail(email);
       setStep("pending");
       addToast({ variant: "success", title: "Email verified", description: "Your application is awaiting admin approval." });
     } catch (err) {
@@ -180,26 +253,47 @@ function SignupWizard() {
 
   async function handleResendOtp() {
     if (resendCooldown > 0) return;
+    if (!(verifyEmailRef.current?.validate() ?? true)) return;
+    const email = form.email.trim();
+
+    setIsLoading(true);
     try {
-      const result = await resendOtp(submittedEmail);
-      if (result?.verificationOtp) {
+      const result = await registerOrResendForEmail(email);
+      if (!result) return;
+
+      setSubmittedEmail(email);
+      if (result && "verificationOtp" in result && result.verificationOtp) {
         setOtp(result.verificationOtp);
         setShowDevOtp(true);
       }
       setResendCooldown(60);
       addToast({
         variant: "success",
-        title: "Code sent",
-        description: result?.verificationOtp
-          ? "A new code is shown below."
-          : "A new verification code has been sent.",
+        title: emailChanged ? "Code sent to new email" : "Code sent",
+        description:
+          result && "verificationOtp" in result && result.verificationOtp
+            ? "A new code is shown below."
+            : `A verification code has been sent to ${email}.`,
       });
     } catch (err) {
+      const message = err instanceof Error ? err.message : "Please try again later.";
+      if (err instanceof AuthApiError && err.code === "APPLICATION_PENDING" && !emailChanged) {
+        setSubmittedEmail(email);
+        setResendCooldown(60);
+        addToast({
+          variant: "warning",
+          title: "Application under review",
+          description: "This email is already verified and awaiting admin approval.",
+        });
+        return;
+      }
       addToast({
         variant: "error",
-        title: "Could not resend",
-        description: err instanceof Error ? err.message : "Please try again later.",
+        title: "Could not send code",
+        description: message,
       });
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -231,16 +325,22 @@ function SignupWizard() {
           ) : step === "verify" ? (
             <>
               <h1 className="text-[28px] font-bold font-display text-ink mb-1.5">Verify your email</h1>
-              <p className="text-sm text-mid mb-4">
-                Enter the 6-digit code sent to <strong>{submittedEmail}</strong>
+              <p className="text-sm text-mid mb-6">
+                Enter your email and the 6-digit code we sent you.
               </p>
-              {showDevOtp && otp && (
-                <div className="mb-4 rounded-lg border border-accent-mid bg-accent-dim px-4 py-3 text-sm text-accent-text">
-                  Email is not configured on this server. Your verification code is:{" "}
-                  <strong className="font-mono text-base tracking-widest">{otp}</strong>
-                </div>
-              )}
               <form className="flex flex-col gap-4" onSubmit={submitOtp}>
+                <Input
+                  ref={verifyEmailRef}
+                  label="Email"
+                  type="email"
+                  placeholder="owner@school.edu"
+                  required
+                  validation="email"
+                  requiredMessage="Email is required"
+                  value={form.email}
+                  onChange={(e) => handleVerifyEmailChange(e.target.value)}
+                  iconLeft={<Mail className="w-4 h-4" />}
+                />
                 <Input
                   label="Verification code"
                   placeholder="123456"
@@ -248,20 +348,33 @@ function SignupWizard() {
                   maxLength={6}
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  iconLeft={<Mail className="w-4 h-4" />}
+                  iconLeft={<Lock className="w-4 h-4" />}
                   required
                 />
-                <Button type="submit" size="lg" className="w-full" loading={isLoading}>
+                {emailChanged && (
+                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 -mt-1">
+                    {hasSignupPayload
+                      ? "You changed your email. Resend the code to verify this address."
+                      : "You changed your email. Resend the code, or start a new application if needed."}
+                  </p>
+                )}
+                {showDevOtp && otp && !emailChanged && (
+                  <div className="rounded-lg border border-accent-mid bg-accent-dim px-4 py-3 text-sm text-accent-text -mt-1">
+                    Email is not configured on this server. Your verification code is:{" "}
+                    <strong className="font-mono text-base tracking-widest">{otp}</strong>
+                  </div>
+                )}
+                <Button type="submit" size="lg" className="w-full" loading={isLoading} disabled={emailChanged}>
                   Verify email
                   <CheckCircle2 className="w-4 h-4" />
                 </Button>
                 <button
                   type="button"
-                  disabled={resendCooldown > 0}
+                  disabled={resendCooldown > 0 || isLoading}
                   onClick={handleResendOtp}
                   className="text-sm text-brand hover:underline disabled:text-mist disabled:no-underline"
                 >
-                  {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Resend code"}
+                  {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : emailChanged ? "Send code to this email" : "Resend code"}
                 </button>
               </form>
             </>
@@ -435,7 +548,9 @@ function SignupWizard() {
                 type="button"
                 className="text-brand hover:underline font-medium"
                 onClick={() => {
-                  if (form.email.trim()) setSubmittedEmail(form.email.trim());
+                  if (form.email.trim()) {
+                    setSubmittedEmail(form.email.trim());
+                  }
                   setStep("verify");
                 }}
               >

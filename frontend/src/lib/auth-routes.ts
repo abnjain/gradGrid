@@ -87,3 +87,11 @@ export function clearPortalCookie() {
   if (typeof document === "undefined") return;
   document.cookie = `${PORTAL_COOKIE_NAME}=; path=/; max-age=0; SameSite=Strict`;
 }
+
+/** Best-effort client clear for refresh cookie (httpOnly cleared via API/proxy Set-Cookie). */
+export function clearRefreshCookie() {
+  if (typeof document === "undefined") return;
+  for (const path of ["/", "/api/v1/auth/refresh"]) {
+    document.cookie = `${REFRESH_COOKIE_NAME}=; path=${path}; max-age=0; SameSite=Lax`;
+  }
+}

@@ -14,6 +14,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { api, configureAuth, getApiError, getApiErrorMessage } from './api-client';
 import {
   clearPortalCookie,
+  clearRefreshCookie,
   setPortalCookie,
 } from './auth-routes';
 import type {
@@ -395,10 +396,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await api.post('/auth/logout');
     } catch {
-      // proceed
+      // proceed — still clear local session
     }
     tokenRef.current = null;
     clearPortalCookie();
+    clearRefreshCookie();
     setState({
       user: null,
       accessToken: null,
