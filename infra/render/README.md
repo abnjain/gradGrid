@@ -56,7 +56,8 @@ From your machine (with repo cloned):
 
 ```bash
 cd backend
-export DATABASE_URL="postgresql://..."   # paste External Database URL from Render
+# Use External Database URL from gradgrid-db → Connect, with SSL:
+export DATABASE_URL="postgresql://USER:PASS@HOST/gradgrid?sslmode=require"
 npm run prisma:seed
 ```
 

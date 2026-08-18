@@ -7,14 +7,14 @@
 
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import pg from 'pg';
 import { config } from './index';
+import { createPgPool } from './pg-pool';
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-const pool = new pg.Pool({ connectionString: config.db.url });
+const pool = createPgPool(config.db.url);
 const adapter = new PrismaPg(pool);
 
 export const prisma =

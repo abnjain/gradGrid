@@ -7,6 +7,7 @@
 import { SignupRequestRepository } from './signup-request.repository';
 import { AuthRepository } from '../auth/auth.repository';
 import { hashPassword, verifyPassword } from '../../shared/utils/password';
+import { hashOtp, verifyOtp } from '../../shared/utils/otp';
 import { sendEmail } from '../../shared/utils/email';
 import {
   generateOtp,
@@ -85,7 +86,7 @@ export class SignupRequestService {
 
     const password_hash = await hashPassword(data.password);
     const otp = generateOtp();
-    const otp_hash = await hashPassword(otp);
+    const otp_hash = hashOtp(otp);
     const otp_expires_at = new Date(Date.now() + OTP_TTL_MS);
 
     const request = await this.repository.create({
@@ -145,7 +146,7 @@ export class SignupRequestService {
       throw new BadRequestError('Verification code has expired. Please request a new one.');
     }
 
-    const valid = await verifyPassword(otp, request.otp_hash);
+    const valid = verifyOtp(otp, request.otp_hash) || (await verifyPassword(otp, request.otp_hash));
     if (!valid) {
       throw new BadRequestError('Invalid verification code');
     }
@@ -183,7 +184,7 @@ export class SignupRequestService {
     }
 
     const otp = generateOtp();
-    const otp_hash = await hashPassword(otp);
+    const otp_hash = hashOtp(otp);
     const otp_expires_at = new Date(Date.now() + OTP_TTL_MS);
 
     await this.repository.updateOtp(request.id, otp_hash, otp_expires_at);
@@ -344,7 +345,7 @@ export class SignupRequestService {
 
   private async resendVerificationForPending(requestId: string, email: string) {
     const otp = generateOtp();
-    const otp_hash = await hashPassword(otp);
+    const otp_hash = hashOtp(otp);
     const otp_expires_at = new Date(Date.now() + OTP_TTL_MS);
 
     await this.repository.updateOtp(requestId, otp_hash, otp_expires_at);
