@@ -144,41 +144,208 @@ test.describe("Branding", () => {
 
 test.describe("Roles & Permissions", () => {
   test.beforeEach(async ({ page }) => {
+    const { mockInstitutionSession } = await import("./helpers/test-auth");
+    await mockInstitutionSession(page, { withTenantContext: true });
+
+    await page.route("**/api/v1/auth/me", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            user: {
+              id: "user-1",
+              firstName: "Priya",
+              lastName: "Iyer",
+              email: "accountant@demo.edu",
+              userType: "institution",
+              sessionId: "session-1",
+              roleName: "institution_owner",
+              permissions: ["roles.view", "roles.create", "roles.update", "roles.delete"],
+              institutionId: "inst-1",
+              organizationId: "org-1",
+              organizationName: "EduTrust Foundation",
+              institutionName: "Greenwood High School",
+              tenantContext: {
+                organizationId: "org-1",
+                organizationName: "EduTrust Foundation",
+                institutionId: "inst-1",
+                institutionName: "Greenwood High School",
+                institutionCode: "GHS-001",
+              },
+            },
+          },
+        }),
+      })
+    );
+
+    await page.route("**/api/v1/permissions", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            modules: [
+              {
+                key: "students",
+                label: "Students",
+                permissions: [
+                  { key: "students.view", action: "view", description: "View" },
+                  { key: "students.create", action: "create", description: "Create" },
+                  { key: "students.update", action: "update", description: "Update" },
+                  { key: "students.delete", action: "delete", description: "Delete" },
+                ],
+              },
+              {
+                key: "fees",
+                label: "Fees",
+                permissions: [
+                  { key: "fees.view", action: "view", description: "View" },
+                  { key: "fees.create", action: "create", description: "Create" },
+                  { key: "fees.update", action: "update", description: "Update" },
+                  { key: "fees.delete", action: "delete", description: "Delete" },
+                ],
+              },
+            ],
+          },
+        }),
+      })
+    );
+
+    await page.route("**/api/v1/roles", (route) => {
+      if (route.request().method() === "GET") {
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            success: true,
+            data: {
+              roles: [
+                {
+                  id: "role-owner",
+                  name: "institution_owner",
+                  description: "Full institution control",
+                  isSystemRole: true,
+                  isLocked: true,
+                  isActive: true,
+                  memberCount: 1,
+                  permissionKeys: ["students.view", "students.create", "fees.view"],
+                },
+                {
+                  id: "role-teacher",
+                  name: "teacher",
+                  description: "Teacher access",
+                  isSystemRole: true,
+                  isLocked: false,
+                  isActive: true,
+                  memberCount: 12,
+                  permissionKeys: ["students.view"],
+                },
+                {
+                  id: "role-accountant",
+                  name: "accountant",
+                  description: "Finance access",
+                  isSystemRole: true,
+                  isLocked: false,
+                  isActive: true,
+                  memberCount: 2,
+                  permissionKeys: ["fees.view", "fees.create"],
+                },
+              ],
+            },
+          }),
+        });
+      }
+      return route.continue();
+    });
+
+    await page.route("**/api/v1/roles/*/permissions", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            role: {
+              id: "role-teacher",
+              name: "teacher",
+              description: "Teacher access",
+              isSystemRole: true,
+              isLocked: false,
+              isActive: true,
+              memberCount: 12,
+              permissionKeys: ["students.view", "fees.delete"],
+            },
+          },
+        }),
+      })
+    );
+
+    await page.route("**/api/v1/roles/*", (route) => {
+      if (route.request().method() === "PATCH") {
+        return route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            success: true,
+            data: {
+              role: {
+                id: "role-teacher",
+                name: "teacher",
+                description: "Teacher access",
+                isSystemRole: true,
+                isLocked: false,
+                isActive: false,
+                memberCount: 12,
+                permissionKeys: ["students.view"],
+              },
+            },
+          }),
+        });
+      }
+      return route.continue();
+    });
+
     await page.goto("/app/settings/roles");
     await expect(page.getByRole("heading", { name: "Roles & Permissions" })).toBeVisible();
   });
 
-  test("lists all roles with member counts", async ({ page }) => {
-    for (const role of ["Administrator", "Principal", "Teacher", "Accountant", "Parent", "Student"]) {
+  test("lists roles with member counts", async ({ page }) => {
+    for (const role of ["Institution Owner", "Teacher", "Accountant"]) {
       await expect(page.locator("main")).toContainText(role);
     }
-    await expect(page.locator("main")).toContainText("Always on");
+    await expect(page.locator("main")).toContainText("Locked");
   });
 
   test("role toggles switch active state and locked roles stay on", async ({ page }) => {
+    await page.getByText("Teacher", { exact: true }).click();
     const teacherToggle = page.getByRole("checkbox", { name: "Toggle Teacher role" });
     await teacherToggle.click({ force: true });
     await expect(teacherToggle).not.toBeChecked();
 
-    const adminToggle = page.getByRole("checkbox", { name: "Toggle Administrator role" });
-    await expect(adminToggle).toBeDisabled();
-    await expect(adminToggle).toBeChecked();
+    const ownerToggle = page.getByRole("checkbox", { name: "Toggle Institution Owner role" });
+    await expect(ownerToggle).toBeDisabled();
+    await expect(ownerToggle).toBeChecked();
   });
 
   test("permission matrix has modules and action checkboxes", async ({ page }) => {
-    for (const moduleName of ["Students", "Attendance", "Finance", "Reports", "Communication", "Settings"]) {
+    await page.getByText("Teacher", { exact: true }).click();
+    for (const moduleName of ["Students", "Fees"]) {
       await expect(page.locator("main")).toContainText(moduleName);
     }
-    for (const action of ["View", "Create", "Edit", "Delete"]) {
+    for (const action of ["View", "Create", "Update", "Delete"]) {
       await expect(page.locator("main")).toContainText(action);
     }
   });
 
   test("permission checkboxes toggle and save shows a toast", async ({ page }) => {
-    const financeDelete = page.getByRole("checkbox", { name: "Finance Delete" });
-    await expect(financeDelete).not.toBeChecked();
-    await financeDelete.click({ force: true });
-    await expect(financeDelete).toBeChecked();
+    await page.getByText("Teacher", { exact: true }).click();
+    const feesDelete = page.getByRole("checkbox", { name: "Fees Delete" });
+    await expect(feesDelete).not.toBeChecked();
+    await feesDelete.click({ force: true });
+    await expect(feesDelete).toBeChecked();
 
     await clickButton(page, "Save Permissions");
     await expect(page.locator("body")).toContainText("Permissions saved");

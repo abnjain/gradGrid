@@ -72,6 +72,7 @@ interface MeResponseData {
     userType?: string;
     user_type?: string;
     permissions?: string[];
+    roleName?: string;
     sessionId?: string;
     institutionId?: string | null;
     organizationId?: string | null;
@@ -171,6 +172,7 @@ function mapMeUser(u: MeResponseData['user']): { user: User; tenantContext: Tena
       email: u.email,
       userType,
       role: (userType === 'platform' ? 'platform_admin' : 'owner') as UserRole,
+      roleName: u.roleName,
       permissions: u.permissions || [],
       institutionId: tenantContext?.institutionId || u.institutionId || undefined,
       institutionName: tenantContext?.institutionName || u.institutionName || undefined,

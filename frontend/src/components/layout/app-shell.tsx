@@ -37,6 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { NotificationsDropdown } from "@/components/layout/notifications-dropdown";
 import { useAuth } from "@/lib/auth-context";
+import { useSwitchInstitution } from "@/lib/use-switch-institution";
 
 /* ─── Types ─── */
 export interface NavItem {
@@ -152,11 +153,17 @@ function Sidebar({ nav, type, institutionName, organizationName, sessionName, on
   const pathname = usePathname();
   const router = useRouter();
   const { logout } = useAuth();
+  const switchInstitution = useSwitchInstitution();
 
   const handleLogout = async () => {
     onClose?.();
     await logout();
     router.push("/login");
+  };
+
+  const handleSwitchInstitution = () => {
+    onClose?.();
+    switchInstitution();
   };
 
   const isActive = (href: string) => {
@@ -198,7 +205,12 @@ function Sidebar({ nav, type, institutionName, organizationName, sessionName, on
       {/* Institution context */}
       {type === "institution" && (
         <div className="px-4 pb-3">
-          <div className="bg-white/5 rounded-lg px-3 py-2.5 border border-white/5">
+          <button
+            type="button"
+            onClick={handleSwitchInstitution}
+            title="Change organization or campus"
+            className="w-full bg-white/5 rounded-lg px-3 py-2.5 border border-white/5 text-left hover:bg-white/10 hover:border-white/10 transition-colors"
+          >
             {organizationName && (
               <p className="text-[10px] text-white/35 font-medium truncate mb-0.5">{organizationName}</p>
             )}
@@ -207,7 +219,8 @@ function Sidebar({ nav, type, institutionName, organizationName, sessionName, on
               <span className="text-xs text-white/80 font-semibold truncate">{sessionName || "Session"}</span>
               <ChevronDown className="w-3 h-3 text-white/40 flex-shrink-0" />
             </div>
-          </div>
+            <p className="text-[10px] text-brand-mid mt-1.5 font-medium">Change institution</p>
+          </button>
         </div>
       )}
 

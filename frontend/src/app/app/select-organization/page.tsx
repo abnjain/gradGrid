@@ -1,8 +1,10 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Building2, ChevronRight } from "lucide-react";
+import { Building2, ChevronRight, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/ui/toast";
 import type { WorkspaceOrganization } from "@/types";
@@ -60,7 +62,13 @@ export default function SelectOrganizationPage() {
       ) : organizations.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface p-8 text-center">
           <p className="text-sm text-mid">No organizations are linked to your account.</p>
-          <p className="text-xs text-mid mt-2">Contact your administrator if you need access.</p>
+          <p className="text-xs text-mid mt-2 mb-5">Register a new institution or contact your administrator for access.</p>
+          <Button size="sm">
+            <Link href="/signup" className="inline-flex items-center gap-2 no-underline text-inherit">
+              <Plus className="w-4 h-4" />
+              Register institution
+            </Link>
+          </Button>
         </div>
       ) : (
         <div className="grid gap-3">
@@ -85,6 +93,19 @@ export default function SelectOrganizationPage() {
           ))}
         </div>
       )}
+
+      <div className="mt-8 rounded-xl border border-dashed border-border bg-surface/60 p-5 text-center">
+        <p className="text-sm font-medium text-ink">Need to add another institution?</p>
+        <p className="text-xs text-mid mt-1 mb-4">
+          Submit a new signup application. Once approved, it will appear here.
+        </p>
+        <Button variant="secondary" size="sm">
+          <Link href="/signup" className="inline-flex items-center gap-2 no-underline text-inherit">
+            <Plus className="w-4 h-4" />
+            Register another institution
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 }

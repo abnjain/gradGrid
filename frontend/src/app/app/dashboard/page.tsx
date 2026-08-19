@@ -10,6 +10,9 @@ import {
   ClipboardCheck,
   Calendar,
   BookOpen,
+  Building2,
+  ArrowLeftRight,
+  Plus,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,8 +20,13 @@ import { Timeline } from "@/components/ui/timeline";
 import { ProgressBar } from "@/components/ui/progress";
 import { QuickActionsMenu } from "@/components/layout/quick-actions-menu";
 import { ArrowRight } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { useSwitchInstitution } from "@/lib/use-switch-institution";
 
 export default function InstitutionDashboard() {
+  const { tenantContext } = useAuth();
+  const switchInstitution = useSwitchInstitution();
+
   return (
     <div className="flex flex-col gap-5">
       {/* Page header */}
@@ -33,6 +41,36 @@ export default function InstitutionDashboard() {
             Today
           </Button>
           <QuickActionsMenu />
+        </div>
+      </div>
+
+      {/* Active institution context */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center flex-shrink-0">
+            <Building2 className="w-5 h-5 text-brand" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[11px] font-medium text-mid uppercase tracking-wide">Current institution</p>
+            <p className="text-sm font-semibold text-ink truncate">
+              {tenantContext?.institutionName || "Campus"}
+            </p>
+            {tenantContext?.organizationName && (
+              <p className="text-xs text-mid truncate">{tenantContext.organizationName}</p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Button variant="secondary" size="sm" onClick={switchInstitution}>
+            <ArrowLeftRight className="w-4 h-4" />
+            Change institution
+          </Button>
+          <Button variant="secondary" size="sm">
+            <Link href="/signup" className="inline-flex items-center gap-2 no-underline text-inherit">
+              <Plus className="w-4 h-4" />
+              Add institution
+            </Link>
+          </Button>
         </div>
       </div>
 

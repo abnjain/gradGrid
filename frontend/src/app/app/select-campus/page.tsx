@@ -3,7 +3,8 @@
 import React, { Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { School, ChevronRight, ArrowLeft } from "lucide-react";
+import { School, ChevronRight, ArrowLeft, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/ui/toast";
 import type { WorkspaceOrganization } from "@/types";
@@ -124,6 +125,19 @@ function SelectCampusContent() {
           ))}
         </div>
       )}
+
+      <div className="mt-8 rounded-xl border border-dashed border-border bg-surface/60 p-5 text-center">
+        <p className="text-sm font-medium text-ink">Add another institution</p>
+        <p className="text-xs text-mid mt-1 mb-4">
+          Register a new campus or organization under a separate signup application.
+        </p>
+        <Button variant="secondary" size="sm">
+          <Link href="/signup" className="inline-flex items-center gap-2 no-underline text-inherit">
+            <Plus className="w-4 h-4" />
+            Register institution
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 }

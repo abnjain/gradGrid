@@ -3,6 +3,7 @@
  */
 
 import { prisma } from '../../config/database';
+import { roleService } from '../rbac/role.service';
 
 export type SignupRequestStatus = 'pending' | 'approved' | 'rejected';
 
@@ -193,23 +194,7 @@ export class SignupRequestRepository {
         },
       });
 
-      const ownerRole = await tx.roles.create({
-        data: {
-          institution_id: institution.id,
-          name: 'institution_owner',
-          description: 'Institution Owner — full institution control',
-          is_system_role: true,
-        },
-      });
-
-      await tx.role_assignments.create({
-        data: {
-          user_id: user.id,
-          role_id: ownerRole.id,
-          institution_id: institution.id,
-          assigned_by: user.id,
-        },
-      });
+      await roleService.provisionInstitutionRoles(institution.id, user.id, tx);
 
       return { organization, institution, user };
     });

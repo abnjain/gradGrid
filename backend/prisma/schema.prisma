@@ -348,12 +348,12 @@ model role_permissions {
   @@map("role_permissions")
 }
 
-/// Associates a user with a role, scoped to an institution.
+/// Associates a user with a role, scoped to an institution (null = platform).
 model role_assignments {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id        String   @db.Uuid
   role_id        String   @db.Uuid
-  institution_id String   @db.Uuid
+  institution_id String?  @db.Uuid
   assigned_by    String   @db.Uuid
   created_at     DateTime @default(now()) @db.Timestamptz
   deleted_at     DateTime? @db.Timestamptz

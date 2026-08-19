@@ -1,15 +1,21 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Construction } from "lucide-react";
+import { Shield } from "lucide-react";
 
-export default function RolesPage() {
+export default function UsersRolesRedirectPage() {
+  const router = useRouter();
   return (
     <EmptyState
-      icon={<Construction className="w-12 h-12" />}
-      title="Roles"
-      description="View and manage user roles and their permissions."
+      icon={<Shield className="w-12 h-12" />}
+      title="Roles & Permissions"
+      description="Manage institution roles from Settings."
+      action={{
+        label: "Open Roles & Permissions",
+        onClick: () => router.push("/app/settings/roles"),
+      }}
     />
   );
 }

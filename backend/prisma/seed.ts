@@ -1,7 +1,7 @@
 /**
  * GradGrid — Database Seed
  *
- * Creates a platform super-admin and optional multi-campus demo data.
+ * Creates RBAC registry, platform super-admin, and optional multi-campus demo data.
  * Run: npm run prisma:seed
  */
 
@@ -10,6 +10,11 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
 import { createPgPool } from '../src/config/pg-pool';
+import {
+  assignPlatformSuperAdmin,
+  seedRbacRegistryAndPlatformRoles,
+} from '../src/modules/rbac/seed-rbac';
+import { roleService } from '../src/modules/rbac/role.service';
 
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is required. For Render external access append ?sslmode=require');
@@ -31,7 +36,8 @@ async function seedPlatformAdmin() {
 
   if (existing) {
     console.log(`Platform admin already exists: ${PLATFORM_ADMIN_EMAIL}`);
-    return;
+    await assignPlatformSuperAdmin(existing.id);
+    return existing.id;
   }
 
   const passwordHash = await bcrypt.hash(PLATFORM_ADMIN_PASSWORD, 12);
@@ -55,9 +61,12 @@ async function seedPlatformAdmin() {
     },
   });
 
+  await assignPlatformSuperAdmin(user.id);
+
   console.log('Platform admin created:');
   console.log(`  Email:    ${PLATFORM_ADMIN_EMAIL}`);
   console.log(`  Password: ${PLATFORM_ADMIN_PASSWORD}`);
+  return user.id;
 }
 
 async function seedMultiCampusDemo() {
@@ -120,28 +129,9 @@ async function seedMultiCampusDemo() {
     },
   });
 
-  for (const campus of [campusA, campusB]) {
-    const role = await prisma.roles.create({
-      data: {
-        institution_id: campus.id,
-        name: campus.id === campusA.id ? 'institution_owner' : 'accountant',
-        description:
-          campus.id === campusA.id
-            ? 'Institution Owner — full institution control'
-            : 'Accountant — finance module access',
-        is_system_role: true,
-      },
-    });
-
-    await prisma.role_assignments.create({
-      data: {
-        user_id: user.id,
-        role_id: role.id,
-        institution_id: campus.id,
-        assigned_by: user.id,
-      },
-    });
-  }
+  await roleService.provisionInstitutionRoles(campusA.id, user.id);
+  await roleService.provisionInstitutionRoles(campusB.id, null);
+  await roleService.assignByName(user.id, 'accountant', campusB.id, user.id);
 
   console.log('Multi-campus demo created:');
   console.log(`  Organization: ${organization.name}`);
@@ -151,6 +141,8 @@ async function seedMultiCampusDemo() {
 }
 
 async function main() {
+  await seedRbacRegistryAndPlatformRoles();
+  console.log('RBAC permission registry and platform roles seeded');
   await seedPlatformAdmin();
   await seedMultiCampusDemo();
 }

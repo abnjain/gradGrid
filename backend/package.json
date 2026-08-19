@@ -14,7 +14,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:prod": "prisma migrate deploy",
     "prisma:seed": "tsx prisma/seed.ts",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "test": "tsx --test src/modules/rbac/rbac-defaults.test.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

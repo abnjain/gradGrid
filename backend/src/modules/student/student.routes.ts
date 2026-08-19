@@ -4,18 +4,20 @@
  * Student profiles, enrollment, parent linking, and lifecycle.
  */
 
-import { Router } from 'express';
-import { authenticate } from '../../middleware';
+import { Router, Request, Response } from 'express';
+import httpStatus from 'http-status';
+import { authenticate, loadPermissions, requirePermissions } from '../../middleware';
 
 const router = Router();
 
-router.use(authenticate);
-// GET /api/v1/students — list students (paginated, filterable)
-// POST /api/v1/students — create student profile
-// GET /api/v1/students/:id — get student details
-// PATCH /api/v1/students/:id — update student profile
-// DELETE /api/v1/students/:id — soft-delete student
-// POST /api/v1/students/:id/parents — link parent
-// DELETE /api/v1/students/:id/parents/:parentId — unlink parent
+router.use(authenticate, loadPermissions);
+
+router.get('/', requirePermissions('students.view'), (_req: Request, res: Response) => {
+  res.status(httpStatus.OK).json({
+    success: true,
+    data: { students: [] },
+    meta: { page: 1, limit: 20, total: 0, totalPages: 0 },
+  });
+});
 
 export default router;

@@ -22,6 +22,7 @@ import {
 } from '../../shared/errors';
 import { SignupRequestService } from '../platform/signup-request.service';
 import { TenantContextService } from './tenant-context.service';
+import { permissionService } from '../rbac/permission.service';
 import { createContextLogger, auditLog } from '../../shared/utils/logger';
 
 const logger = createContextLogger({ module: 'auth' });
@@ -101,8 +102,10 @@ export class AuthService {
       details: { email: data.email },
     });
 
-    // Build permissions array (for MVP, this would come from role assignments)
-    const permissions: string[] = [];
+    const resolved = await permissionService.resolveFresh(
+      user.id,
+      user.user_type === 'platform' ? null : user.institution_id
+    );
 
     return {
       user: {
@@ -111,8 +114,10 @@ export class AuthService {
         lastName: user.last_name,
         email: user.email,
         userType: user.user_type,
-        roleName: user.user_type === 'platform' ? 'Platform User' : 'Institution User',
-        permissions,
+        roleName:
+          resolved.roleName ||
+          (user.user_type === 'platform' ? 'Platform User' : 'Institution User'),
+        permissions: resolved.keys,
         sessionId: session.id,
       },
       tokens,
@@ -285,6 +290,11 @@ export class AuthService {
       sessionInstitutionId || null
     );
 
+    const resolved = await permissionService.resolveFresh(
+      userId,
+      user.user_type === 'platform' ? null : tenantContext?.institutionId || user.institution_id
+    );
+
     return {
       id: user.id,
       firstName: user.first_name,
@@ -292,6 +302,8 @@ export class AuthService {
       email: user.email,
       phone: user.phone || '',
       userType: user.user_type,
+      roleName: resolved.roleName || undefined,
+      permissions: resolved.keys,
       institutionId: tenantContext?.institutionId || null,
       organizationId: tenantContext?.organizationId || null,
       organizationName: tenantContext?.organizationName || null,

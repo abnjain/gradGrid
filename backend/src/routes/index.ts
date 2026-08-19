@@ -17,6 +17,7 @@ import financeRoutes from '../modules/finance/finance.routes';
 import communicationRoutes from '../modules/communication/communication.routes';
 import reportsRoutes from '../modules/reports/reports.routes';
 import seoRoutes from '../modules/seo/seo.routes';
+import rbacRoutes from '../modules/rbac/rbac.routes';
 
 const router = Router();
 
@@ -35,5 +36,6 @@ router.use('/finance', financeRoutes);
 router.use('/communication', communicationRoutes);
 router.use('/reports', reportsRoutes);
 router.use('/seo', seoRoutes);
+router.use(rbacRoutes);
 
 export default router;

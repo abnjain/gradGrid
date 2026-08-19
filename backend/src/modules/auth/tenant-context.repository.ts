@@ -27,7 +27,9 @@ export class TenantContextRepository {
     });
 
     for (const assignment of assignments) {
-      institutionIds.add(assignment.institution_id);
+      if (assignment.institution_id) {
+        institutionIds.add(assignment.institution_id);
+      }
     }
 
     if (institutionIds.size === 0) {
