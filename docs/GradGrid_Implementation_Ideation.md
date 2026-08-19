@@ -1,9 +1,9 @@
 # GradGrid Implementation Ideation
 
-**Document Version:** 1.0  
+**Document Version:** 1.3  
 **Status:** Internal Reference (Agent / Engineering)  
 **Document Type:** Engineering Backlog & Ideation  
-**Last Updated:** 2026-08-17  
+**Last Updated:** 2026-08-19  
 **Governed By:** [GradGrid_Constitution_Documentation.md](./GradGrid_Constitution_Documentation.md)
 
 **Related Documents:**
@@ -55,7 +55,7 @@ These items block safe production deployment and must precede domain feature wor
 
 | # | Idea | Rationale |
 |---|------|-----------|
-| F1 | Add `frontend/src/middleware.ts` protecting `/app/*` and `/admin/*` | Server-side route guard; prevents unauthenticated access to portal shells |
+| F1 | Add Next.js proxy protecting `/app/*`, `/platform/*`, and `/portal/*` | Server-side route guard; prevents unauthenticated access to portal shells |
 | F2 | Redirect unauthenticated users to `/login` with `returnUrl` | Standard UX; supports deep links post-login |
 | F3 | Separate platform vs institution session context | IA defines distinct portal boundaries |
 | F4 | Fix CORS default to `http://localhost:3000` (or env-driven) | Refresh cookie flow breaks with `5173` default |
@@ -104,7 +104,7 @@ After §2 foundation items, implement domains in this order (aligns with [PRD Ph
 
 | # | Backend | Frontend | IA Reference |
 |---|---------|----------|--------------|
-| O1 | `GET/POST/PATCH /institutions` CRUD | Wire `admin/institutions/list` (currently mock) | [IA §Platform Admin](./GradGrid_Information_Architecture.md) |
+| O1 | `GET/POST/PATCH` platform institutions CRUD | Wire `platform/institutions/list` | [IA §Platform Admin](./GradGrid_Information_Architecture.md) |
 | O2 | `GET/POST/PATCH /organizations` CRUD | Wire `admin/organizations/list` | Same |
 | O3 | Academic session management API | Wire `admin/institutions/[id]/academic-sessions` | [Database Design §sessions](./GradGrid_Database_Design.md) |
 | O4 | Institution-scoped middleware (`institutionId` from JWT/header) | Pass institution context in API client | Security Architecture §tenant isolation |
@@ -202,15 +202,22 @@ Update this table as items ship. Link to [Master Update Log](./GradGrid_Referenc
 | D4 | Env-only secrets in production | Done | 2026-08-18 |
 | D5 | Rate limiting middleware | Done | 2026-08-19 |
 | D6 | Expand .gitignore | Done | 2026-08-18 |
-| O1 | Institutions CRUD API + admin list/new | Done | 2026-08-19 |
-| O2 | Organizations CRUD API + admin list/new | Done | 2026-08-19 |
-| O3 | Academic session management API | Done | 2026-08-19 |
+| O1 | Institutions CRUD API + platform list/new (`/platform`) | Done | 2026-08-19 |
+| O2 | Organizations CRUD API + platform list/new (`/platform`) | Done | 2026-08-19 |
+| O3 | Academic session management API + platform UI | Done | 2026-08-19 |
 | O4 | Institution-scoped middleware (JWT) | Done | 2026-08-19 |
 | U1 | Invite / assign / deactivate users | Done | 2026-08-19 |
 | U2 | Platform user management | Done | 2026-08-19 |
 | U3 | Role assignment UI persistence | Done | 2026-08-19 |
-| P1–P4 | Students / teachers / parents CRUD | Not started (Phase 2) | — |
-| A1–A3 | Admissions pipeline | Not started (Phase 2) | — |
+| AUTH-SPLIT | Separate auth APIs + FE trees: `/platform`, `/app`, `/portal` | Done | 2026-08-19 |
+| P1 | Students CRUD + portal invite (institution-scoped) | Done | 2026-08-19 |
+| P2 | Teachers / staff CRUD | Not started | — |
+| P3 | Parents CRUD + child links + portal invite | Done | 2026-08-19 |
+| P4 | Student CSV export | Done | 2026-08-19 |
+| A1 | Enquiry list/create + status transitions | Done | 2026-08-19 |
+| A2 | Convert enquiry → student + parent link | Done | 2026-08-19 |
+| A3 | Enquiry document upload | Not started | — |
+| PORTAL | Student/parent login: own institute only; student ID card/class; parent linked children only | Done | 2026-08-19 |
 | Auth slice | Login, register, reset, account | Done | 2026-08-17 |
 | App shell UX | Sidebar, theme, notifications | Done | 2026-08-17 |
 
@@ -223,3 +230,4 @@ Update this table as items ship. Link to [Master Update Log](./GradGrid_Referenc
 | 1.0 | 2026-08-17 | Engineering | Initial ideation: foundation hardening, domain order, testing, risks, tracker |
 | 1.1 | 2026-08-19 | Engineering | Marked Phase 1 foundation + O1–O4/U3 complete; Phase 2 still open |
 | 1.2 | 2026-08-19 | Engineering | Phase 1 complete: U1/U2 user invite, role assign, deactivate + platform users |
+| 1.3 | 2026-08-19 | Engineering | Auth split (`/platform` `/app` `/portal`); learner portal scope; Phase 2 students/parents/admissions APIs |

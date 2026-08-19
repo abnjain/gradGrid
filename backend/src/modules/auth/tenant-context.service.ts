@@ -10,6 +10,7 @@ import { AuthRepository } from './auth.repository';
 import { TenantContextRepository } from './tenant-context.repository';
 import { ForbiddenError, NotFoundError, BadRequestError } from '../../shared/errors';
 import { auditLog, createContextLogger } from '../../shared/utils/logger';
+import { audienceForUserType } from './auth-audience';
 
 const logger = createContextLogger({ module: 'tenant-context' });
 
@@ -121,6 +122,7 @@ export class TenantContextService {
         sub: userId,
         email,
         userType,
+        aud: audienceForUserType(userType),
         sessionId,
         institutionId: context.institutionId,
         organizationId: context.organizationId,

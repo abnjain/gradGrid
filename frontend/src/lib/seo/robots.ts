@@ -20,7 +20,7 @@ export interface RobotsOptions {
  *
  * By default:
  * - Allow all crawlers on public pages
- * - Disallow /admin/ (platform admin portal)
+ * - Disallow /platform/ (platform admin portal)
  * - Disallow /app/ (institution portal)
  * - Reference the sitemap
  */
@@ -50,7 +50,7 @@ export function generateRobotsTxt(
 
   // Disallow authenticated / private sections
   if (disallowAdmin) {
-    lines.push("Disallow: /admin/");
+    lines.push("Disallow: /platform/");
   }
   if (disallowApp) {
     lines.push("Disallow: /app/");

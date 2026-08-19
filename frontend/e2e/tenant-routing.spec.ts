@@ -57,8 +57,8 @@ test.describe("Login routing", () => {
     ]);
     await setSessionCookies(page, "platform");
     await mockPlatformAuthApis(page);
-    await page.waitForURL(/\/admin\/dashboard/);
-    await expect(page).toHaveURL(/\/admin\/dashboard/);
+    await page.waitForURL(/\/platform\/dashboard/);
+    await expect(page).toHaveURL(/\/platform\/dashboard/);
   });
 });
 
@@ -167,7 +167,7 @@ test.describe("Platform portal bypass", () => {
   test("platform session does not require tenant selection", async ({ page }) => {
     await mockPlatformSession(page);
 
-    await page.goto("/admin/dashboard");
-    await expect(page).toHaveURL(/\/admin\/dashboard/);
+    await page.goto("/platform/dashboard");
+    await expect(page).toHaveURL(/\/platform\/dashboard/);
   });
 });

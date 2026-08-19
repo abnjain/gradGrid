@@ -2,6 +2,8 @@
  * GradGrid — Auth Module Types
  */
 
+import { AuthAudience } from './auth-audience';
+
 export interface TokenPair {
   accessToken: string;
   refreshToken: string;
@@ -10,6 +12,8 @@ export interface TokenPair {
 export interface LoginRequest {
   email: string;
   password: string;
+  /** Expected login audience — enforced by route */
+  audience?: AuthAudience;
 }
 
 export interface LoginResponse {

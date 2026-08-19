@@ -1,9 +1,7 @@
 /**
  * GradGrid — Auth Controller
  *
- * HTTP layer for authentication endpoints.
- * Refresh token is set as an httpOnly cookie for XSS protection.
- * Access token remains in the response body for in-memory storage on the client.
+ * Audience-aware HTTP layer for platform / institution / portal auth.
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -13,16 +11,20 @@ import { SignupRequestService } from '../platform/signup-request.service';
 import { TenantContextService } from './tenant-context.service';
 import { config } from '../../config';
 import { AuthenticatedRequest } from '../../shared/types';
+import {
+  AuthAudience,
+  audienceForUserType,
+  refreshCookieName,
+} from './auth-audience';
 
 const authService = new AuthService();
 const signupService = new SignupRequestService();
 const tenantContextService = new TenantContextService();
 
-function getRefreshCookieOptions(overrides?: { path?: string }) {
-  const defaultPath = `${config.api.prefix}/auth/refresh`;
+function getRefreshCookieOptions(audience: AuthAudience, overrides?: { path?: string }) {
+  const defaultPath = `${config.api.prefix}/auth/${audience}/refresh`;
   const path = overrides?.path ?? (config.cookies.path || defaultPath);
-  const sameSite =
-    config.cookies.sameSite || (config.isProd ? 'strict' : 'lax');
+  const sameSite = config.cookies.sameSite || (config.isProd ? 'strict' : 'lax');
 
   return {
     httpOnly: true,
@@ -33,33 +35,40 @@ function getRefreshCookieOptions(overrides?: { path?: string }) {
   };
 }
 
-function clearRefreshTokenCookies(res: Response) {
+function clearAudienceRefreshCookies(res: Response, audience: AuthAudience) {
+  const name = refreshCookieName(audience);
   const paths = new Set<string>([
     config.cookies.path || '/',
+    `${config.api.prefix}/auth/${audience}/refresh`,
     `${config.api.prefix}/auth/refresh`,
     '/',
   ]);
   for (const path of paths) {
-    res.clearCookie('refreshToken', getRefreshCookieOptions({ path }));
+    res.clearCookie(name, getRefreshCookieOptions(audience, { path }));
+    // Legacy single cookie during migration
+    res.clearCookie('refreshToken', getRefreshCookieOptions(audience, { path }));
   }
 }
 
+function readRefreshToken(req: Request, audience: AuthAudience): string | undefined {
+  const name = refreshCookieName(audience);
+  return (
+    req.cookies?.[name] ||
+    req.cookies?.refreshToken ||
+    req.body?.refreshToken ||
+    undefined
+  );
+}
+
 export class AuthController {
-  /**
-   * POST /api/v1/auth/login
-   *
-   * Sets refreshToken as httpOnly cookie on success.
-   * Also returns it in the response body for backward compatibility.
-   */
-  async login(req: Request, res: Response, next: NextFunction) {
+  async login(req: Request, res: Response, next: NextFunction, audience: AuthAudience) {
     try {
       const ipAddress = req.ip;
       const userAgent = req.headers['user-agent'];
-      const result = await authService.login(req.body, ipAddress, userAgent);
+      const result = await authService.login(req.body, ipAddress, userAgent, audience);
 
-      // Set refresh token as httpOnly cookie — never expose to JS
       const { refreshToken, ...publicTokens } = result.tokens;
-      res.cookie('refreshToken', refreshToken, getRefreshCookieOptions());
+      res.cookie(refreshCookieName(audience), refreshToken, getRefreshCookieOptions(audience));
 
       res.status(httpStatus.OK).json({
         success: true,
@@ -73,10 +82,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * POST /api/v1/auth/register-institution
-   * Submit a self-service institution signup application (pending admin approval).
-   */
   async registerInstitution(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await signupService.submitRequest(req.body);
@@ -90,9 +95,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * POST /api/v1/auth/verify-email
-   */
   async verifyEmail(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await signupService.verifyEmail(req.body.email, req.body.otp);
@@ -102,9 +104,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * POST /api/v1/auth/resend-otp
-   */
   async resendOtp(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await signupService.resendOtp(req.body.email);
@@ -114,9 +113,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * GET /api/v1/auth/signup-status?email=
-   */
   async signupStatus(req: Request, res: Response, next: NextFunction) {
     try {
       const email = String(req.query.email || '');
@@ -127,32 +123,9 @@ export class AuthController {
     }
   }
 
-  /**
-   * @deprecated Use registerInstitution
-   */
-  async register(req: Request, res: Response, next: NextFunction) {
+  async refresh(req: Request, res: Response, next: NextFunction, audience: AuthAudience) {
     try {
-      const user = await authService.register(req.body);
-      res.status(httpStatus.CREATED).json({
-        success: true,
-        data: { user },
-        message: 'User registered successfully',
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * POST /api/v1/auth/refresh
-   *
-   * Reads refreshToken from httpOnly cookie first, falls back to request body.
-   * Rotates the token and sets the new one as a cookie.
-   */
-  async refresh(req: Request, res: Response, next: NextFunction) {
-    try {
-      // Prefer httpOnly cookie over body (body kept for backward compat / mobile clients)
-      const token = req.cookies?.refreshToken || req.body.refreshToken;
+      const token = readRefreshToken(req, audience);
 
       if (!token) {
         res.status(httpStatus.UNAUTHORIZED).json({
@@ -165,11 +138,9 @@ export class AuthController {
         return;
       }
 
-      const tokens = await authService.refreshToken(token);
-
-      // Rotate the httpOnly cookie — never expose the new refresh token to JS
+      const tokens = await authService.refreshToken(token, audience);
       const { refreshToken, ...publicTokens } = tokens;
-      res.cookie('refreshToken', refreshToken, getRefreshCookieOptions());
+      res.cookie(refreshCookieName(audience), refreshToken, getRefreshCookieOptions(audience));
 
       res.status(httpStatus.OK).json({
         success: true,
@@ -180,22 +151,13 @@ export class AuthController {
     }
   }
 
-  /**
-   * POST /api/v1/auth/logout
-   *
-   * Clears the refresh token cookie.
-   * Token invalidation should be implemented in the service layer.
-   */
   async logout(req: Request, res: Response, next: NextFunction) {
     try {
       const authReq = req as AuthenticatedRequest;
       const { id: userId, sessionId, userType } = authReq.user;
-
-      // Deactivate the session server-side
       await authService.logout(sessionId, userId, userType);
-
-      // Clear the refresh token cookie (all known paths)
-      clearRefreshTokenCookies(res);
+      const audience = audienceForUserType(userType);
+      clearAudienceRefreshCookies(res, audience);
 
       res.status(httpStatus.OK).json({
         success: true,
@@ -206,9 +168,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * GET /api/v1/auth/me
-   */
   async me(req: Request, res: Response, next: NextFunction) {
     try {
       const authUser = (req as AuthenticatedRequest).user;
@@ -222,9 +181,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * GET /api/v1/auth/workspaces
-   */
   async workspaces(req: Request, res: Response, next: NextFunction) {
     try {
       const authUser = (req as AuthenticatedRequest).user;
@@ -235,9 +191,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * POST /api/v1/auth/select-context
-   */
   async selectContext(req: Request, res: Response, next: NextFunction) {
     try {
       const authUser = (req as AuthenticatedRequest).user;
@@ -261,12 +214,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * POST /api/v1/auth/forgot-password
-   *
-   * Sends a password reset email. Always responds 200 when the email
-   * is valid — even for unknown accounts (prevents user enumeration).
-   */
   async forgotPassword(req: Request, res: Response, next: NextFunction) {
     try {
       await authService.forgotPassword(req.body.email);
@@ -279,11 +226,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * POST /api/v1/auth/reset-password
-   *
-   * Exchanges a single-use reset token for a new password.
-   */
   async resetPassword(req: Request, res: Response, next: NextFunction) {
     try {
       await authService.resetPassword(req.body.token, req.body.password);
@@ -296,11 +238,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * PATCH /api/v1/auth/profile
-   *
-   * Updates the authenticated user's profile (first/last name, phone).
-   */
   async updateProfile(req: Request, res: Response, next: NextFunction) {
     try {
       const authUser = (req as AuthenticatedRequest).user;
@@ -319,12 +256,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * POST /api/v1/auth/change-password
-   *
-   * Verifies the current password, then sets a new one.
-   * Keeps the current session; revokes all others.
-   */
   async changePassword(req: Request, res: Response, next: NextFunction) {
     try {
       const authUser = (req as AuthenticatedRequest).user;
@@ -341,11 +272,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * GET /api/v1/auth/sessions
-   *
-   * Lists all of the authenticated user's sessions (most recent first).
-   */
   async listSessions(req: Request, res: Response, next: NextFunction) {
     try {
       const authUser = (req as AuthenticatedRequest).user;
@@ -359,11 +285,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * DELETE /api/v1/auth/sessions/:sessionId
-   *
-   * Revokes a session. The current session cannot be revoked here.
-   */
   async revokeSession(req: Request, res: Response, next: NextFunction) {
     try {
       const authUser = (req as AuthenticatedRequest).user;

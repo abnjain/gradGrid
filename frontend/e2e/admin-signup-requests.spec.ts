@@ -18,7 +18,7 @@ test.describe("Admin signup requests", () => {
 
   test("lists pending applications with owner and institution details", async ({ page }) => {
     await mockSignupRequestsList(page);
-    await page.goto("/admin/signup-requests");
+    await page.goto("/platform/signup-requests");
 
     await expect(page.getByRole("heading", { name: "Signup requests" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Greenwood High", level: 2 })).toBeVisible();
@@ -30,7 +30,7 @@ test.describe("Admin signup requests", () => {
 
   test("shows empty state when no pending applications exist", async ({ page }) => {
     await mockSignupRequestsList(page, []);
-    await page.goto("/admin/signup-requests");
+    await page.goto("/platform/signup-requests");
 
     await expect(page.getByText("No pending signup applications.")).toBeVisible();
   });
@@ -45,7 +45,7 @@ test.describe("Admin signup requests", () => {
       })
     );
 
-    await page.goto("/admin/signup-requests");
+    await page.goto("/platform/signup-requests");
     await page.getByRole("button", { name: "Approve" }).click();
 
     await expect(toastContainer(page).getByText("Application approved", { exact: true })).toBeVisible();
@@ -62,7 +62,7 @@ test.describe("Admin signup requests", () => {
       })
     );
 
-    await page.goto("/admin/signup-requests");
+    await page.goto("/platform/signup-requests");
     await page.getByRole("button", { name: "Reject" }).click();
     await page.getByPlaceholder("Optional rejection reason").fill("Incomplete documentation");
     await page.getByRole("button", { name: "Confirm reject" }).click();
@@ -73,7 +73,7 @@ test.describe("Admin signup requests", () => {
 
   test("reject modal can be cancelled", async ({ page }) => {
     await mockSignupRequestsList(page);
-    await page.goto("/admin/signup-requests");
+    await page.goto("/platform/signup-requests");
 
     await page.getByRole("button", { name: "Reject" }).click();
     await expect(page.getByPlaceholder("Optional rejection reason")).toBeVisible();
@@ -85,7 +85,7 @@ test.describe("Admin signup requests", () => {
 
   test("approve is disabled until email is verified", async ({ page }) => {
     await mockSignupRequestsList(page, [MOCK_SIGNUP_REQUEST_UNVERIFIED]);
-    await page.goto("/admin/signup-requests");
+    await page.goto("/platform/signup-requests");
 
     await expect(page.getByText("Email pending")).toBeVisible();
     await expect(page.getByRole("button", { name: "Approve" })).toBeDisabled();

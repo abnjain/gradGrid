@@ -33,11 +33,25 @@ export const MOCK_TENANT_CONTEXT = {
 
 export async function setSessionCookies(
   page: Page,
-  portalType: "institution" | "platform" = "institution"
+  portalType: "institution" | "platform" | "portal" = "institution"
 ) {
+  const audienceCookie =
+    portalType === "platform"
+      ? "refreshToken_platform"
+      : portalType === "portal"
+        ? "refreshToken_portal"
+        : "refreshToken_institution";
+
   await page.context().addCookies([
     {
       name: "refreshToken",
+      value: "mock-refresh-token",
+      url: BASE_URL,
+      httpOnly: true,
+      sameSite: "Strict",
+    },
+    {
+      name: audienceCookie,
       value: "mock-refresh-token",
       url: BASE_URL,
       httpOnly: true,
@@ -62,6 +76,16 @@ export async function mockInstitutionAuthApis(
   const email = options?.email ?? "accountant@demo.edu";
   const withTenantContext = options?.withTenantContext ?? false;
 
+  await page.route("**/api/v1/auth/**/refresh", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: { tokens: { accessToken: "mock-access-token" } },
+      }),
+    })
+  );
   await page.route("**/api/v1/auth/refresh", (route) =>
     route.fulfill({
       status: 200,
@@ -73,6 +97,34 @@ export async function mockInstitutionAuthApis(
     })
   );
 
+  await page.route("**/api/v1/auth/**/me", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        success: true,
+        data: {
+          user: {
+            id: "user-1",
+            firstName: "Priya",
+            lastName: "Iyer",
+            email,
+            userType: "institution",
+            sessionId: "session-1",
+            ...(withTenantContext
+              ? {
+                  institutionId: MOCK_TENANT_CONTEXT.institutionId,
+                  organizationId: MOCK_TENANT_CONTEXT.organizationId,
+                  organizationName: MOCK_TENANT_CONTEXT.organizationName,
+                  institutionName: MOCK_TENANT_CONTEXT.institutionName,
+                  tenantContext: MOCK_TENANT_CONTEXT,
+                }
+              : {}),
+          },
+        },
+      }),
+    })
+  );
   await page.route("**/api/v1/auth/me", (route) =>
     route.fulfill({
       status: 200,
@@ -115,7 +167,7 @@ export async function mockInstitutionSession(
 }
 
 export async function mockPlatformAuthApis(page: Page) {
-  await page.route("**/api/v1/auth/refresh", (route) =>
+  const fulfillRefresh = (route: { fulfill: (r: object) => Promise<void> }) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -123,10 +175,8 @@ export async function mockPlatformAuthApis(page: Page) {
         success: true,
         data: { tokens: { accessToken: "mock-platform-token" } },
       }),
-    })
-  );
-
-  await page.route("**/api/v1/auth/me", (route) =>
+    });
+  const fulfillMe = (route: { fulfill: (r: object) => Promise<void> }) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -143,8 +193,12 @@ export async function mockPlatformAuthApis(page: Page) {
           },
         },
       }),
-    })
-  );
+    });
+
+  await page.route("**/api/v1/auth/**/refresh", fulfillRefresh);
+  await page.route("**/api/v1/auth/refresh", fulfillRefresh);
+  await page.route("**/api/v1/auth/**/me", fulfillMe);
+  await page.route("**/api/v1/auth/me", fulfillMe);
 }
 
 export async function mockPlatformSession(page: Page) {
@@ -153,17 +207,18 @@ export async function mockPlatformSession(page: Page) {
 }
 
 export async function mockWorkspaces(page: Page) {
-  await page.route("**/api/v1/auth/workspaces", (route) =>
+  const fulfill = (route: { fulfill: (r: object) => Promise<void> }) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify(MOCK_ORGANIZATIONS),
-    })
-  );
+    });
+  await page.route("**/api/v1/auth/**/workspaces", fulfill);
+  await page.route("**/api/v1/auth/workspaces", fulfill);
 }
 
 export async function mockSelectContext(page: Page) {
-  await page.route("**/api/v1/auth/select-context", (route) =>
+  const fulfill = (route: { fulfill: (r: object) => Promise<void> }) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -174,12 +229,13 @@ export async function mockSelectContext(page: Page) {
           context: MOCK_TENANT_CONTEXT,
         },
       }),
-    })
-  );
+    });
+  await page.route("**/api/v1/auth/**/select-context", fulfill);
+  await page.route("**/api/v1/auth/select-context", fulfill);
 }
 
 export async function mockInstitutionLogin(page: Page, email = "accountant@demo.edu") {
-  await page.route("**/api/v1/auth/login", (route) =>
+  const fulfill = (route: { fulfill: (r: object) => Promise<void> }) =>
     route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -199,8 +255,9 @@ export async function mockInstitutionLogin(page: Page, email = "accountant@demo.
           tokens: { accessToken: "mock-access-token" },
         },
       }),
-    })
-  );
+    });
+  await page.route("**/api/v1/auth/**/login", fulfill);
+  await page.route("**/api/v1/auth/login", fulfill);
 }
 
 export async function waitForOrganizations(page: Page) {

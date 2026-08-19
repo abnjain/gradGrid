@@ -142,7 +142,7 @@ export function validateMetadata(meta: Metadata): ValidationResult {
  * when the page path starts with an auth-only prefix.
  */
 export function validateAuthNoindex(path: string, meta: Metadata): ValidationResult {
-  const authPrefixes = ["/admin/", "/app/", "/login", "/forgot-password"];
+  const authPrefixes = ["/platform/", "/app/", "/login", "/forgot-password"];
   const shouldBeNoindex = authPrefixes.some((prefix) => path.startsWith(prefix));
 
   if (shouldBeNoindex) {

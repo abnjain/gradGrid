@@ -95,7 +95,7 @@ export interface NavGroup {
 // User & Auth Types
 // ============================================================================
 
-export type AuthUserType = "platform" | "institution";
+export type AuthUserType = "platform" | "institution" | "parent" | "student";
 
 export interface User {
   id: string;

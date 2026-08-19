@@ -30,7 +30,7 @@ function LoginForm() {
 
     setIsLoading(true);
     try {
-      const userType = await login({ email: form.email.trim(), password: form.password });
+      const userType = await login({ email: form.email.trim(), password: form.password }, "institution");
       const returnUrl = searchParams.get("returnUrl");
       router.push(resolvePostAuthRedirect(userType, returnUrl, false));
       addToast({ variant: "success", title: "Signed in successfully" });
@@ -77,8 +77,8 @@ function LoginForm() {
             <span className="font-display font-bold text-xl text-ink tracking-tight">GradGrid</span>
           </Link>
 
-          <h1 className="text-[28px] font-bold font-display text-ink mb-1.5">Welcome back</h1>
-          <p className="text-sm text-mid mb-8">Sign in to your institution or platform account</p>
+          <h1 className="text-[28px] font-bold font-display text-ink mb-1.5">Institution sign in</h1>
+          <p className="text-sm text-mid mb-8">For school staff — owners, teachers, accountants, and other members</p>
 
           <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
             <Input ref={emailRef} label="Email" type="email" placeholder="you@institution.edu" autoComplete="email" required validation="email" requiredMessage="Email is required" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} iconLeft={<Mail className="w-4 h-4" />} />
@@ -96,7 +96,18 @@ function LoginForm() {
 
           <p className="text-sm text-mid text-center mt-6">
             New to GradGrid?{" "}
-            <Link href="/signup" className="text-brand hover:underline font-medium no-underline">Register your institution</Link>
+            <Link href="/signup" className="text-brand hover:underline font-medium no-underline">
+              Register your institution
+            </Link>
+          </p>
+          <p className="text-xs text-mid text-center mt-3">
+            <Link href="/platform/login" className="text-brand no-underline hover:underline">
+              Platform
+            </Link>
+            {" · "}
+            <Link href="/portal/login" className="text-brand no-underline hover:underline">
+              Student / Parent
+            </Link>
           </p>
         </div>
       </div>

@@ -10,7 +10,9 @@ import { Request } from 'express';
 export interface AuthUser {
   id: string;
   email: string;
-  userType: 'platform' | 'institution';
+  userType: 'platform' | 'institution' | 'parent' | 'student';
+  /** JWT audience: platform | institution | portal */
+  audience?: 'platform' | 'institution' | 'portal';
   institutionId?: string | null;
   organizationId?: string | null;
   roleId: string;

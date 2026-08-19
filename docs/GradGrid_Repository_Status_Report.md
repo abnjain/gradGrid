@@ -240,7 +240,9 @@ Key environment variables (`backend/.env.example`):
 | Marketing | `/`, `/about`, `/contact`, `/privacy`, `/terms` | ✅ Complete (SEO-rich) |
 | Auth | `/(auth)/login`, `/signup`, `/forgot-password`, `/reset-password` | ✅ API-backed |
 | Institution portal | `/app/*` | UI shell; auth + account integrated |
-| Platform admin | `/admin/*` | UI shell; mostly placeholders |
+| Platform admin | `/platform/*` (legacy `/admin/*` redirects) | UI shell; wired for orgs/institutions/users |
+| Institution staff | `/app/*` | UI shell; students/parents/admissions APIs shipping |
+| Student / Parent | `/portal/*` | Scoped learner portal: own institute only |
 | Account | `/app/account/*` | ✅ API-backed (profile, password, sessions) |
 
 ### 7.3 Key Components

@@ -111,29 +111,29 @@ const institutionNav: NavGroup[] = [
 
 /* ─── Platform Admin Navigation ─── */
 const adminNav: NavGroup[] = [
-  { items: [{ label: "Dashboard", href: "/admin/dashboard", icon: <LayoutDashboard className="w-4 h-4" /> }] },
+  { items: [{ label: "Dashboard", href: "/platform/dashboard", icon: <LayoutDashboard className="w-4 h-4" /> }] },
   {
     items: [
-      { label: "Organizations", href: "/admin/organizations", icon: <Building2 className="w-4 h-4" /> },
-      { label: "Institutions", href: "/admin/institutions", icon: <School className="w-4 h-4" /> },
+      { label: "Organizations", href: "/platform/organizations", icon: <Building2 className="w-4 h-4" /> },
+      { label: "Institutions", href: "/platform/institutions", icon: <School className="w-4 h-4" /> },
     ],
   },
   {
     items: [
-      { label: "Signup Requests", href: "/admin/signup-requests", icon: <UserPlus className="w-4 h-4" /> },
-      { label: "Platform Users", href: "/admin/users", icon: <UserCog className="w-4 h-4" /> },
+      { label: "Signup Requests", href: "/platform/signup-requests", icon: <UserPlus className="w-4 h-4" /> },
+      { label: "Platform Users", href: "/platform/users", icon: <UserCog className="w-4 h-4" /> },
     ],
   },
   {
     label: "SYSTEM",
     items: [
-      { label: "Audit Logs", href: "/admin/audit-logs", icon: <ShieldAlert className="w-4 h-4" /> },
-      { label: "Configuration", href: "/admin/configuration", icon: <Settings className="w-4 h-4" /> },
+      { label: "Audit Logs", href: "/platform/audit-logs", icon: <ShieldAlert className="w-4 h-4" /> },
+      { label: "Configuration", href: "/platform/configuration", icon: <Settings className="w-4 h-4" /> },
     ],
   },
   {
     items: [
-      { label: "My Account", href: "/admin/account", icon: <UserCircle className="w-4 h-4" /> },
+      { label: "My Account", href: "/platform/account", icon: <UserCircle className="w-4 h-4" /> },
     ],
   },
 ];
@@ -141,7 +141,7 @@ const adminNav: NavGroup[] = [
 /* ─── Sidebar ─── */
 interface SidebarProps {
   nav: NavGroup[];
-  type: "institution" | "admin";
+  type: "institution" | "platform";
   institutionName?: string;
   organizationName?: string;
   sessionName?: string;
@@ -158,7 +158,7 @@ function Sidebar({ nav, type, institutionName, organizationName, sessionName, on
   const handleLogout = async () => {
     onClose?.();
     await logout();
-    router.push("/login");
+    router.push(type === "platform" ? "/platform/login" : "/login");
   };
 
   const handleSwitchInstitution = () => {
@@ -167,7 +167,7 @@ function Sidebar({ nav, type, institutionName, organizationName, sessionName, on
   };
 
   const isActive = (href: string) => {
-    if (href === "/app/dashboard" || href === "/admin/dashboard") {
+    if (href === "/app/dashboard" || href === "/platform/dashboard") {
       return pathname === href;
     }
     return pathname.startsWith(href);
@@ -274,7 +274,7 @@ function Sidebar({ nav, type, institutionName, organizationName, sessionName, on
       {/* Bottom section */}
       <div className="px-3 pb-4 pt-2 border-t border-white/5">
         <Link
-          href={type === "institution" ? "/app/account" : "/admin/account"}
+          href={type === "institution" ? "/app/account" : "/platform/account"}
           onClick={onClose}
           className="flex items-center gap-2.5 px-3 py-[9px] rounded-lg text-sm text-white/65 hover:bg-white/5 hover:text-white/85 transition-all no-underline"
         >
@@ -366,14 +366,21 @@ function Header({ breadcrumbs, onMenuClick, onExpandSidebar }: HeaderProps) {
 /* ─── AppShell ─── */
 interface AppShellProps {
   children: React.ReactNode;
-  type: "institution" | "admin";
+  type: "institution" | "platform";
   breadcrumbs?: { label: string; href?: string }[];
   institutionName?: string;
   organizationName?: string;
   sessionName?: string;
 }
 
-function AppShell({ children, type, breadcrumbs, institutionName, organizationName, sessionName }: AppShellProps) {
+function AppShell({
+  children,
+  type,
+  breadcrumbs,
+  institutionName,
+  organizationName,
+  sessionName,
+}: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [desktopCollapsed, setDesktopCollapsed] = React.useState(false);
   const nav = type === "institution" ? institutionNav : adminNav;

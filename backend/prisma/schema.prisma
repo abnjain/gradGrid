@@ -137,7 +137,7 @@ model users {
   email_verified  Boolean  @default(false)
   phone           String?  @db.VarChar(20)
   is_active       Boolean  @default(true)
-  user_type       String   @default("institution") @db.VarChar(20) // platform | institution
+  user_type       String   @default("institution") @db.VarChar(20) // platform | institution | parent | student
   created_at      DateTime @default(now()) @db.Timestamptz
   updated_at      DateTime @default(now()) @db.Timestamptz
   deleted_at      DateTime? @db.Timestamptz
@@ -164,6 +164,8 @@ model users {
   role_assignments_assigned role_assignments[] @relation("role_assigned_by")
   student_fee_discounts    student_fee_discounts[]
   staff                    staff[]
+  students                 students[]
+  parents                  parents[]
   // authored enquiry docs
   enquiry_docs_uploaded    admission_enquiry_documents[] @relation("enquiry_doc_uploaded_by")
   // marked attendance
@@ -377,6 +379,7 @@ model students {
   id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   institution_id      String   @db.Uuid
   academic_session_id String   @db.Uuid
+  user_id             String?  @db.Uuid
   // Identity
   first_name          String   @db.VarChar(100)
   last_name           String   @db.VarChar(100)
@@ -445,6 +448,7 @@ model students {
 
   institution      institutions      @relation(fields: [institution_id], references: [id])
   academic_session academic_sessions @relation(fields: [academic_session_id], references: [id])
+  user             users?            @relation(fields: [user_id], references: [id])
 
   student_parent_links            student_parent_links[]
   student_section_enrollments     student_section_enrollments[]
@@ -459,6 +463,7 @@ model students {
   @@unique([institution_id, admission_number])
   @@index([institution_id])
   @@index([academic_session_id])
+  @@index([user_id])
   @@index([institution_id, status])
   @@index([institution_id, last_name, first_name])
   @@index([institution_id, category])
@@ -470,6 +475,7 @@ model students {
 model parents {
   id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   institution_id      String   @db.Uuid
+  user_id             String?  @db.Uuid
   first_name          String   @db.VarChar(100)
   last_name           String   @db.VarChar(100)
   relation            String   @db.VarChar(30)
@@ -491,8 +497,11 @@ model parents {
   deleted_at          DateTime? @db.Timestamptz
 
   institution          institutions          @relation(fields: [institution_id], references: [id])
+  user                 users?                @relation(fields: [user_id], references: [id])
   student_parent_links student_parent_links[]
 
+  @@index([institution_id])
+  @@index([user_id])
   @@map("parents")
 }
 

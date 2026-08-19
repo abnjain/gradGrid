@@ -219,9 +219,131 @@ async function seedMultiCampusDemo() {
     extraCampuses: [{ institutionId: campusB.id, roleName: 'accountant' }],
   });
 
+  const session =
+    (await prisma.academic_sessions.findFirst({
+      where: { institution_id: campusA.id, deleted_at: null },
+    })) ||
+    (await prisma.academic_sessions.create({
+      data: {
+        institution_id: campusA.id,
+        name: '2026-27',
+        start_date: new Date('2026-04-01'),
+        end_date: new Date('2027-03-31'),
+        is_current: true,
+      },
+    }));
+
+  const DEMO_STUDENT_EMAIL = process.env.SEED_DEMO_STUDENT_EMAIL || 'student@demo.edu';
+  const DEMO_STUDENT_PASSWORD = process.env.SEED_DEMO_STUDENT_PASSWORD || 'Student@12345';
+  const DEMO_PARENT_EMAIL = process.env.SEED_DEMO_PARENT_EMAIL || 'parent@demo.edu';
+  const DEMO_PARENT_PASSWORD = process.env.SEED_DEMO_PARENT_PASSWORD || 'Parent@12345';
+
+  let studentUser = await prisma.users.findUnique({ where: { email: DEMO_STUDENT_EMAIL } });
+  if (!studentUser) {
+    studentUser = await prisma.users.create({
+      data: {
+        first_name: 'Aarav',
+        last_name: 'Sharma',
+        email: DEMO_STUDENT_EMAIL,
+        user_type: 'student',
+        institution_id: campusA.id,
+        email_verified: true,
+        is_active: true,
+      },
+    });
+    await prisma.user_passwords.create({
+      data: {
+        user_id: studentUser.id,
+        password_hash: await bcrypt.hash(DEMO_STUDENT_PASSWORD, 12),
+        is_current: true,
+      },
+    });
+    console.log(`Portal student: ${DEMO_STUDENT_EMAIL} / ${DEMO_STUDENT_PASSWORD}`);
+  }
+
+  let student = await prisma.students.findFirst({
+    where: { institution_id: campusA.id, admission_number: 'ADM-1001', deleted_at: null },
+  });
+  if (!student) {
+    student = await prisma.students.create({
+      data: {
+        institution_id: campusA.id,
+        academic_session_id: session.id,
+        user_id: studentUser.id,
+        first_name: 'Aarav',
+        last_name: 'Sharma',
+        admission_number: 'ADM-1001',
+        roll_number: '10101',
+        email: DEMO_STUDENT_EMAIL,
+        status: 'active',
+        gender: 'male',
+      },
+    });
+  } else if (!student.user_id) {
+    await prisma.students.update({
+      where: { id: student.id },
+      data: { user_id: studentUser.id },
+    });
+  }
+
+  let parentUser = await prisma.users.findUnique({ where: { email: DEMO_PARENT_EMAIL } });
+  if (!parentUser) {
+    parentUser = await prisma.users.create({
+      data: {
+        first_name: 'Neha',
+        last_name: 'Sharma',
+        email: DEMO_PARENT_EMAIL,
+        user_type: 'parent',
+        institution_id: campusA.id,
+        email_verified: true,
+        is_active: true,
+      },
+    });
+    await prisma.user_passwords.create({
+      data: {
+        user_id: parentUser.id,
+        password_hash: await bcrypt.hash(DEMO_PARENT_PASSWORD, 12),
+        is_current: true,
+      },
+    });
+    console.log(`Portal parent: ${DEMO_PARENT_EMAIL} / ${DEMO_PARENT_PASSWORD}`);
+  }
+
+  let parent = await prisma.parents.findFirst({
+    where: { institution_id: campusA.id, email: DEMO_PARENT_EMAIL, deleted_at: null },
+  });
+  if (!parent) {
+    parent = await prisma.parents.create({
+      data: {
+        institution_id: campusA.id,
+        user_id: parentUser.id,
+        first_name: 'Neha',
+        last_name: 'Sharma',
+        relation: 'mother',
+        phone: '+919876543210',
+        email: DEMO_PARENT_EMAIL,
+      },
+    });
+  } else if (!parent.user_id) {
+    await prisma.parents.update({
+      where: { id: parent.id },
+      data: { user_id: parentUser.id },
+    });
+  }
+
+  const link = await prisma.student_parent_links.findFirst({
+    where: { student_id: student.id, parent_id: parent.id },
+  });
+  if (!link) {
+    await prisma.student_parent_links.create({
+      data: { student_id: student.id, parent_id: parent.id, is_primary: true },
+    });
+  }
+
   console.log('Multi-campus demo ready:');
   console.log(`  Organization: ${organization.name}`);
   console.log(`  Campuses:     ${campusA.name}, ${campusB.name}`);
+  console.log('  Portal:       /portal/login (student@demo.edu, parent@demo.edu)');
 }
 
 async function main() {

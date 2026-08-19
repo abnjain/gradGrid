@@ -522,7 +522,7 @@ Per Constitution §12, every feature must be classified as **MVP**, **Planned**,
 * GradGrid is a multi-tenant SaaS platform; no requirement should assume a single-institution deployment.
 * MVP architecture will be a Modular Monolith with future microservice readiness, per the platform's engineering principles.
 * Features marked *(Future)* are acknowledged product direction but are not committed for the initial release.
-* Student and Parent login/portal access is deferred to a future phase; current scope treats them as managed profiles only.
+* Student and Parent login/portal access ships as a scoped learner portal (`/portal`): students see only their own institution profile, class, and ID card; parents see only children linked via `student_parent_links` at that institution. Full self-service (fees, attendance) remains future.
 
 ---
 
@@ -544,7 +544,7 @@ The following are explicitly deferred and must be marked **Coming Soon** or excl
 
 * Mobile OTP Authentication, Remember Me, MFA/2FA
 * Field-Level Permissions
-* Student/Parent Login and Portals
+* Student/Parent Login and Portals — **partial:** auth + home/ID card/children scope shipped; full product portal deferred
 * Online Admissions
 * Payment Gateway Integration, Online Payments, Auto Reconciliation
 * Online Exams, Exam Creation, Question Bank

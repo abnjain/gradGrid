@@ -51,19 +51,30 @@ async function attemptRefresh(): Promise<boolean> {
   isRefreshing = true;
   refreshPromise = (async () => {
     try {
-      const res = await fetch(`${API_BASE}/auth/refresh`, {
+      const res = await fetch(`${API_BASE}/auth/institution/refresh`, {
         method: 'POST',
-        credentials: 'include', // sends the httpOnly cookie
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
       });
 
-      if (!res.ok) {
-        setAccessToken(null);
-        return false;
+      let body: { data?: { tokens?: { accessToken?: string } } } | null = null;
+      if (res.ok) {
+        body = await res.json();
+      } else {
+        for (const path of ['/auth/platform/refresh', '/auth/portal/refresh', '/auth/refresh']) {
+          const alt = await fetch(`${API_BASE}${path}`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          if (alt.ok) {
+            body = await alt.json();
+            break;
+          }
+        }
       }
 
-      const body = await res.json();
-      const newToken = body.data?.tokens?.accessToken;
+      const newToken = body?.data?.tokens?.accessToken;
       if (newToken) {
         setAccessToken(newToken);
         return true;

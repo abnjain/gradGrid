@@ -18,7 +18,8 @@ const authRepository = new AuthRepository();
 interface JwtPayload {
   sub: string;
   email: string;
-  userType: 'platform' | 'institution';
+  userType: 'platform' | 'institution' | 'parent' | 'student';
+  aud?: 'platform' | 'institution' | 'portal';
   sessionId: string;
   institutionId?: string | null;
   organizationId?: string | null;
@@ -53,6 +54,7 @@ export async function authenticate(
       id: payload.sub,
       email: payload.email,
       userType: payload.userType,
+      audience: payload.aud,
       institutionId: payload.institutionId,
       organizationId: payload.organizationId,
       sessionId: payload.sessionId,
@@ -101,6 +103,7 @@ export function optionalAuth(
       id: payload.sub,
       email: payload.email,
       userType: payload.userType,
+      audience: payload.aud,
       institutionId: payload.institutionId,
       organizationId: payload.organizationId,
       sessionId: payload.sessionId,

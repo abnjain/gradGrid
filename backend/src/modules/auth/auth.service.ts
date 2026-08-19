@@ -8,6 +8,7 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { config } from '../../config';
+import { prisma } from '../../config/database';
 import { AuthRepository } from './auth.repository';
 import { TokenPair, LoginRequest, LoginResponse } from './auth.types';
 import { hashPassword, verifyPassword } from '../../shared/utils/password';
@@ -24,6 +25,11 @@ import { SignupRequestService } from '../platform/signup-request.service';
 import { TenantContextService } from './tenant-context.service';
 import { permissionService } from '../rbac/permission.service';
 import { createContextLogger, auditLog } from '../../shared/utils/logger';
+import {
+  AuthAudience,
+  audienceForUserType,
+  isUserTypeAllowed,
+} from './auth-audience';
 
 const logger = createContextLogger({ module: 'auth' });
 
@@ -44,15 +50,24 @@ export class AuthService {
   async login(
     data: LoginRequest,
     ipAddress?: string,
-    userAgent?: string
+    userAgent?: string,
+    audience: AuthAudience = 'institution'
   ): Promise<LoginResponse> {
-    logger.info({ email: data.email }, 'Login attempt');
+    logger.info({ email: data.email, audience }, 'Login attempt');
 
-    await this.signupService.checkLoginBlocked(data.email);
+    if (audience === 'institution') {
+      await this.signupService.checkLoginBlocked(data.email);
+    }
 
     const user = await this.repository.findUserByEmail(data.email);
     if (!user) {
       throw new UnauthorizedError('Invalid email or password');
+    }
+
+    if (!isUserTypeAllowed(user.user_type, audience)) {
+      throw new UnauthorizedError(
+        `This account cannot sign in through the ${audience} login`
+      );
     }
 
     const currentPassword = user.user_passwords[0];
@@ -73,21 +88,36 @@ export class AuthService {
       throw new EmailNotVerifiedError();
     }
 
-    // Generate tokens
-    // Create session first
+    let institutionId: string | null =
+      audience === 'platform' ? null : user.institution_id;
+
+    if (audience === 'portal') {
+      const scoped = await this.resolvePortalInstitution(user.id, user.user_type);
+      if (!scoped) {
+        throw new UnauthorizedError(
+          'No active institution profile is linked to this portal account'
+        );
+      }
+      institutionId = scoped;
+    }
+
     const session = await this.repository.createSession({
       userId: user.id,
       ipAddress: ipAddress || 'unknown',
       userAgent: userAgent || 'unknown',
-      expiresAt: new Date(Date.now() + 15 * 60 * 1000), // matches access token expiry
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
     });
+
+    if (institutionId && audience === 'portal') {
+      await this.repository.updateSessionInstitution(session.id, institutionId);
+    }
 
     const tokens = await this.generateTokens(
       user.id,
       user.email,
       user.user_type,
       session.id,
-      user.user_type === 'platform' ? user.institution_id : null,
+      institutionId,
       null
     );
     await this.repository.updateLastLogin(user.id);
@@ -99,12 +129,12 @@ export class AuthService {
       ipAddress,
       userAgent,
       resourceType: 'session',
-      details: { email: data.email },
+      details: { email: data.email, audience },
     });
 
     const resolved = await permissionService.resolveFresh(
       user.id,
-      user.user_type === 'platform' ? null : user.institution_id
+      audience === 'platform' ? null : user.institution_id
     );
 
     return {
@@ -116,7 +146,11 @@ export class AuthService {
         userType: user.user_type,
         roleName:
           resolved.roleName ||
-          (user.user_type === 'platform' ? 'Platform User' : 'Institution User'),
+          (user.user_type === 'platform'
+            ? 'Platform User'
+            : audience === 'portal'
+              ? 'Portal User'
+              : 'Institution User'),
         permissions: resolved.keys,
         sessionId: session.id,
       },
@@ -135,11 +169,13 @@ export class AuthService {
     institutionId?: string | null,
     organizationId?: string | null
   ): Promise<TokenPair> {
+    const aud = audienceForUserType(userType);
     const accessToken = jwt.sign(
       {
         sub: userId,
         email,
         userType,
+        aud,
         sessionId,
         institutionId: institutionId || undefined,
         organizationId: organizationId || undefined,
@@ -175,7 +211,8 @@ export class AuthService {
    * Refresh an access token using a valid refresh token.
    */
   async refreshToken(
-    refreshTokenValue: string
+    refreshTokenValue: string,
+    audience?: AuthAudience
   ): Promise<TokenPair> {
     const tokenHash = crypto
       .createHash('sha256')
@@ -188,7 +225,6 @@ export class AuthService {
     }
 
     if (storedToken.is_revoked) {
-      // Token reuse detected — revoke entire family
       await this.repository.revokeRefreshTokenFamily(storedToken.family_id);
       throw new UnauthorizedError('Refresh token has been revoked');
     }
@@ -197,12 +233,15 @@ export class AuthService {
       throw new UnauthorizedError('Refresh token has expired');
     }
 
-    // Revoke the used token (rotation)
     await this.repository.revokeRefreshTokenFamily(storedToken.family_id);
 
     const user = await this.repository.findUserById(storedToken.user_id);
     if (!user || !user.is_active) {
       throw new UnauthorizedError('User not found or deactivated');
+    }
+
+    if (audience && !isUserTypeAllowed(user.user_type, audience)) {
+      throw new UnauthorizedError('Refresh token does not match this portal');
     }
 
     let session = await this.repository.findLatestActiveSession(user.id);
@@ -614,5 +653,29 @@ export class AuthService {
     });
 
     logger.info({ userId, sessionId }, 'User logged out');
+  }
+
+  /**
+   * Portal accounts are bound to exactly one institution via students/parents.user_id.
+   */
+  private async resolvePortalInstitution(
+    userId: string,
+    userType: string
+  ): Promise<string | null> {
+    if (userType === 'student') {
+      const student = await prisma.students.findFirst({
+        where: { user_id: userId, deleted_at: null, status: 'active' },
+        select: { institution_id: true },
+      });
+      return student?.institution_id || null;
+    }
+    if (userType === 'parent') {
+      const parent = await prisma.parents.findFirst({
+        where: { user_id: userId, deleted_at: null },
+        select: { institution_id: true },
+      });
+      return parent?.institution_id || null;
+    }
+    return null;
   }
 }

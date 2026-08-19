@@ -49,6 +49,21 @@ const nextConfig: NextConfig = {
     },
   ],
 
+  async redirects() {
+    return [
+      {
+        source: "/admin",
+        destination: "/platform",
+        permanent: true,
+      },
+      {
+        source: "/admin/:path*",
+        destination: "/platform/:path*",
+        permanent: true,
+      },
+    ];
+  },
+
   // API proxy: dev uses localhost rewrite; production may use API_INTERNAL_URL at build
   // or runtime proxy via app/api/[[...path]]/route.ts (Render).
   async rewrites() {

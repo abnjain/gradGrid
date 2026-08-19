@@ -67,7 +67,8 @@ When updating any reference document listed in §3, **add a row to the Master Up
 | Document | Version | Last Updated | Purpose |
 |----------|---------|--------------|---------|
 | [GradGrid_Repository_Status_Report.md](./GradGrid_Repository_Status_Report.md) | 1.0 | 2026-08-17 | Point-in-time codebase snapshot |
-| [GradGrid_Implementation_Ideation.md](./GradGrid_Implementation_Ideation.md) | 1.0 | 2026-08-17 | Prioritized next steps and engineering ideas |
+| [GradGrid_Implementation_Ideation.md](./GradGrid_Implementation_Ideation.md) | 1.3 | 2026-08-19 | Prioritized next steps and engineering ideas |
+| [GradGrid_Auth_Portal_Split.md](./GradGrid_Auth_Portal_Split.md) | 1.0 | 2026-08-19 | Auth audience split + learner portal scope |
 | **This document** | 1.0 | 2026-08-17 | Index, cross-references, master update log |
 
 ### 3.5 Design
@@ -84,6 +85,7 @@ All changes to implementation reference documents (and significant cross-doc upd
 
 | Date | Document(s) Updated | Version | Author | Summary of Changes |
 |------|---------------------|---------|--------|-------------------|
+| 2026-08-19 | `GradGrid_Auth_Portal_Split.md`, Ideation 1.3, IA, PRD, Status Report, Reference Index | — | Engineering | Auth/FE split `/platform` `/app` `/portal`; learner portal scope; Phase 2 students/parents/admissions |
 | 2026-08-17 | `GradGrid_Reference_Index.md` | 1.0 | Engineering | **Created.** Master index, document registry, cross-reference map, update log system |
 | 2026-08-17 | `GradGrid_Implementation_Ideation.md` | 1.0 | Engineering | **Created.** Prioritized engineering backlog, phase alignment, risk mitigations |
 | 2026-08-17 | `GradGrid_Repository_Status_Report.md` | 1.0 | Engineering | **Created.** Full repo analysis: stack, API surface, frontend scale, security, maturity matrix |

@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
-import { AppShell } from "@/components/layout/app-shell";
+import { AppShell } from "@/components/layout";
 import { TenantContextGuard } from "@/components/auth/tenant-context-guard";
 import { useAuth } from "@/lib/auth-context";
 import { isTenantSelectPath } from "@/lib/auth-routes";

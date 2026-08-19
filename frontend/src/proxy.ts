@@ -1,48 +1,68 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
-  REFRESH_COOKIE_NAME,
   PORTAL_COOKIE_NAME,
+  audienceFromPathname,
   getPortalHome,
   isAuthPath,
   isProtectedPath,
   isSafeReturnUrl,
+  loginPathForAudience,
+  refreshCookieForAudience,
+  REFRESH_COOKIE_NAME,
+  type AuthAudience,
 } from "@/lib/auth-routes";
 
+function hasAudienceSession(request: NextRequest, audience: AuthAudience): boolean {
+  return (
+    request.cookies.has(refreshCookieForAudience(audience)) ||
+    request.cookies.has(REFRESH_COOKIE_NAME)
+  );
+}
+
 /**
- * Server-side auth boundary (Implementation Ideation §2.2 F1/F2).
- *
- * - Blocks unauthenticated access to /app/* and /admin/*
- * - Redirects authenticated users away from auth pages
- * - Preserves returnUrl for post-login redirect
- *
- * Uses the httpOnly refreshToken cookie as the session indicator.
- * Fine-grained token validation remains in AuthProvider (client).
+ * Server-side auth boundary for /platform, /app, and /portal.
  */
 export function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
-  const hasSession = request.cookies.has(REFRESH_COOKIE_NAME);
+  const pathAudience = audienceFromPathname(pathname);
 
-  if (isProtectedPath(pathname) && !hasSession) {
+  if (isProtectedPath(pathname) && pathAudience && !hasAudienceSession(request, pathAudience)) {
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/login";
+    loginUrl.pathname = loginPathForAudience(pathAudience);
     loginUrl.search = "";
     loginUrl.searchParams.set("returnUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isAuthPath(pathname) && hasSession) {
-    const returnUrl = searchParams.get("returnUrl");
+  if (isProtectedPath(pathname) && pathAudience) {
     const portalType = request.cookies.get(PORTAL_COOKIE_NAME)?.value;
-    const destination =
-      returnUrl && isSafeReturnUrl(returnUrl)
-        ? returnUrl
-        : getPortalHome(portalType === "platform" ? "platform" : "institution");
+    if (portalType && portalType !== pathAudience) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = loginPathForAudience(pathAudience);
+      loginUrl.search = "";
+      return NextResponse.redirect(loginUrl);
+    }
+  }
 
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = destination;
-    redirectUrl.search = "";
-    return NextResponse.redirect(redirectUrl);
+  if (isAuthPath(pathname)) {
+    let authAudience: AuthAudience = "institution";
+    if (pathname.startsWith("/platform/")) authAudience = "platform";
+    else if (pathname.startsWith("/portal/")) authAudience = "portal";
+
+    if (hasAudienceSession(request, authAudience)) {
+      const returnUrl = searchParams.get("returnUrl");
+      const portalType = request.cookies.get(PORTAL_COOKIE_NAME)?.value || authAudience;
+      const destination =
+        returnUrl && isSafeReturnUrl(returnUrl, authAudience)
+          ? returnUrl
+          : getPortalHome(portalType);
+
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = destination;
+      redirectUrl.search = "";
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
   return NextResponse.next();
@@ -51,6 +71,8 @@ export function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     "/app/:path*",
+    "/platform/:path*",
+    "/portal/:path*",
     "/admin/:path*",
     "/login",
     "/signup",

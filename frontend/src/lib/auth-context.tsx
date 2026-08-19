@@ -13,9 +13,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api, configureAuth, getApiError, getApiErrorMessage } from './api-client';
 import {
+  audienceFromUserType,
+  authApiPrefix,
   clearPortalCookie,
   clearRefreshCookie,
   setPortalCookie,
+  type AuthAudience,
 } from './auth-routes';
 import type {
   AuthState,
@@ -97,7 +100,7 @@ export class AuthApiError extends Error {
 }
 
 interface AuthContextValue extends AuthState {
-  login: (credentials: LoginCredentials) => Promise<AuthUserType>;
+  login: (credentials: LoginCredentials, audience?: AuthAudience) => Promise<AuthUserType>;
   registerInstitution: (data: RegisterInstitutionInput) => Promise<{ email: string; verificationOtp?: string }>;
   verifyEmail: (email: string, otp: string) => Promise<void>;
   resendOtp: (email: string) => Promise<{ verificationOtp?: string }>;
@@ -109,7 +112,10 @@ interface AuthContextValue extends AuthState {
 }
 
 function normalizeUserType(value?: string | null): AuthUserType {
-  return value === 'platform' ? 'platform' : 'institution';
+  if (value === 'platform') return 'platform';
+  if (value === 'parent') return 'parent';
+  if (value === 'student') return 'student';
+  return 'institution';
 }
 
 function mapTenantContext(
@@ -242,20 +248,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function trySilentRefresh() {
       try {
         const refreshRes = await api.post<{ tokens: { accessToken: string } }>(
-          '/auth/refresh',
+          '/auth/institution/refresh',
           {},
           false
         );
-        if (cancelled || !refreshRes.success || !refreshRes.data) return;
+        if (cancelled || !refreshRes.success || !refreshRes.data) {
+          // try platform then portal
+          for (const path of ['/auth/platform/refresh', '/auth/portal/refresh', '/auth/refresh'] as const) {
+            try {
+              const alt = await api.post<{ tokens: { accessToken: string } }>(path, {}, false);
+              if (alt.success && alt.data) {
+                const accessToken = alt.data.tokens.accessToken;
+                tokenRef.current = accessToken;
+                const mePath = path.includes('platform')
+                  ? '/auth/platform/me'
+                  : path.includes('portal')
+                    ? '/auth/portal/me'
+                    : '/auth/institution/me';
+                const meRes = await api.get<MeResponseData>(mePath, true);
+                if (cancelled) return;
+                if (meRes.success && meRes.data?.user) {
+                  const { user, tenantContext } = mapMeUser(meRes.data.user);
+                  setPortalCookie(user.userType);
+                  setState({
+                    user,
+                    accessToken,
+                    tenantContext,
+                    isAuthenticated: true,
+                    isLoading: false,
+                  });
+                  return;
+                }
+              }
+            } catch {
+              // continue
+            }
+          }
+          return;
+        }
 
         const accessToken = refreshRes.data.tokens.accessToken;
         tokenRef.current = accessToken;
 
-        const meRes = await api.get<MeResponseData>('/auth/me', true);
+        const meRes = await api.get<MeResponseData>('/auth/institution/me', true);
         if (cancelled) return;
 
         if (meRes.success && meRes.data?.user) {
           const { user, tenantContext } = mapMeUser(meRes.data.user);
+          setPortalCookie(user.userType);
           setState({
             user,
             accessToken,
@@ -292,9 +332,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const login = useCallback(async (credentials: LoginCredentials): Promise<AuthUserType> => {
+  const login = useCallback(async (credentials: LoginCredentials, audience: AuthAudience = 'institution'): Promise<AuthUserType> => {
     try {
-      const res = await api.post<LoginResponseData>('/auth/login', credentials, false);
+      const res = await api.post<LoginResponseData>(`${authApiPrefix(audience)}/login`, credentials, false);
       if (!res.success || !res.data) throw res;
       const user = mapAuthUser(res.data.user);
       setPortalCookie(user.userType);
@@ -311,7 +351,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: string;
         requiresEmailVerification: boolean;
         verificationOtp?: string;
-      }>('/auth/register-institution', data);
+      }>('/auth/institution/register-institution', data);
       if (!res.success || !res.data) throw res;
       return { email: res.data.email, verificationOtp: res.data.verificationOtp };
     } catch (err) {
@@ -321,7 +361,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const verifyEmail = useCallback(async (email: string, otp: string) => {
     try {
-      const res = await api.postPublic('/auth/verify-email', { email, otp });
+      const res = await api.postPublic('/auth/institution/verify-email', { email, otp });
       if (!res.success) throw res;
     } catch (err) {
       throwApiError(err, 'Verification failed. Please try again.');
@@ -330,7 +370,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resendOtp = useCallback(async (email: string) => {
     try {
-      const res = await api.postPublic<{ verificationOtp?: string }>('/auth/resend-otp', { email });
+      const res = await api.postPublic<{ verificationOtp?: string }>('/auth/institution/resend-otp', { email });
       if (!res.success) throw res;
       return { verificationOtp: res.data?.verificationOtp };
     } catch (err) {
@@ -339,14 +379,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loadWorkspaces = useCallback(async () => {
-    const res = await api.get<{ organizations: WorkspaceOrganization[] }>('/auth/workspaces');
+    const res = await api.get<{ organizations: WorkspaceOrganization[] }>('/auth/institution/workspaces');
     if (!res.success || !res.data) throw res;
     return res.data.organizations;
   }, []);
 
   const selectContext = useCallback(async (organizationId: string, institutionId: string) => {
     try {
-      const res = await api.post<SelectContextResponse>('/auth/select-context', {
+      const res = await api.post<SelectContextResponse>('/auth/institution/select-context', {
         organizationId,
         institutionId,
       });
@@ -395,14 +435,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    const audience = audienceFromUserType(state.user?.userType);
     try {
-      await api.post('/auth/logout');
+      await api.post(`${authApiPrefix(audience)}/logout`);
     } catch {
       // proceed — still clear local session
     }
     tokenRef.current = null;
     clearPortalCookie();
-    clearRefreshCookie();
+    clearRefreshCookie(audience);
     setState({
       user: null,
       accessToken: null,
@@ -410,7 +451,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: false,
       isLoading: false,
     });
-  }, []);
+  }, [state.user?.userType]);
 
   const updateUser = useCallback((patch: Partial<Pick<User, 'name' | 'email'>>) => {
     setState((prev) => (prev.user ? { ...prev, user: { ...prev.user, ...patch } } : prev));

@@ -65,19 +65,24 @@ URLs follow a consistent hierarchical pattern:
 /app/finance/fees                  → Fee list
 /app/finance/fees/{id}/receipt     → Fee receipt
 /app/attendance/mark               → Today's attendance entry
-/admin/organizations               → Platform: organization list
-/admin/organizations/{id}          → Organization detail
-/admin/institutions/{id}           → Institution detail
+/admin/organizations               → (legacy redirect) Platform: organization list
+/platform/organizations            → Platform: organization list
+/platform/organizations/{id}       → Organization detail
+/platform/institutions/{id}        → Institution detail
+/portal/home                       → Student / Parent portal home
+/portal/id-card                    → Student ID card (own institute only)
+/portal/children                   → Parent linked children (own institute only)
 ```
 
 **Conventions:**
 
 * `/app` prefix — Institution Portal
-* `/admin` prefix — Platform Admin Portal
+* `/platform` prefix — Platform Admin Portal (replaces `/admin`; `/admin/*` permanently redirects)
+* `/portal` prefix — Student / Parent learner portal (scoped to linked institution records)
 * Kebab-case for multi-word paths (`/academic-sessions`, `/audit-logs`)
 * Resource IDs are UUIDs internally; slugs may be used for human-readable contexts
 * Version prefix for API routes: `/api/v1/`
-
+* Auth APIs: `/api/v1/auth/platform/*`, `/api/v1/auth/institution/*`, `/api/v1/auth/portal/*`
 ---
 
 # 4. Platform Admin Portal — Information Architecture

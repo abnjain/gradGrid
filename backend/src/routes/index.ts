@@ -19,6 +19,9 @@ import reportsRoutes from '../modules/reports/reports.routes';
 import seoRoutes from '../modules/seo/seo.routes';
 import rbacRoutes from '../modules/rbac/rbac.routes';
 import usersRoutes from '../modules/users/users.routes';
+import portalRoutes from '../modules/portal/portal.routes';
+import parentRoutes from '../modules/parent/parent.routes';
+import admissionRoutes from '../modules/admission/admission.routes';
 
 const router = Router();
 
@@ -30,7 +33,10 @@ router.use('/auth', authRoutes);
 router.use('/platform', platformRoutes);
 router.use('/institutions', institutionRoutes);
 router.use('/users', usersRoutes);
+router.use('/portal', portalRoutes);
 router.use('/students', studentRoutes);
+router.use('/parents', parentRoutes);
+router.use('/admissions', admissionRoutes);
 router.use('/academic', academicRoutes);
 router.use('/attendance', attendanceRoutes);
 router.use('/exams', examinationRoutes);
