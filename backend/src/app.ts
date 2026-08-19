@@ -11,7 +11,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { config } from './config';
-import { requestId, errorHandler } from './middleware';
+import { requestId, errorHandler, rateLimit } from './middleware';
 import routes from './routes';
 
 const app = express();
@@ -30,6 +30,9 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id'],
   })
 );
+
+// Rate limiting (Ideation D5)
+app.use(rateLimit);
 
 // Compression
 app.use(compression());

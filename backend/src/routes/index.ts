@@ -18,6 +18,7 @@ import communicationRoutes from '../modules/communication/communication.routes';
 import reportsRoutes from '../modules/reports/reports.routes';
 import seoRoutes from '../modules/seo/seo.routes';
 import rbacRoutes from '../modules/rbac/rbac.routes';
+import usersRoutes from '../modules/users/users.routes';
 
 const router = Router();
 
@@ -28,6 +29,7 @@ router.use('/health', healthRoutes);
 router.use('/auth', authRoutes);
 router.use('/platform', platformRoutes);
 router.use('/institutions', institutionRoutes);
+router.use('/users', usersRoutes);
 router.use('/students', studentRoutes);
 router.use('/academic', academicRoutes);
 router.use('/attendance', attendanceRoutes);

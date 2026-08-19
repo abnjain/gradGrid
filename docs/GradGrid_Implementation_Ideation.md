@@ -183,13 +183,36 @@ Update this table as items ship. Link to [Master Update Log](./GradGrid_Referenc
 
 | ID | Item | Status | Completed |
 |----|------|--------|-----------|
-| R1 | RBAC DB fallback | ⬜ Not started | — |
-| F1 | Next.js middleware | ⬜ Not started | — |
-| S1 | Prisma seed script | ⬜ Not started | — |
-| D1 | docker-compose.yml | ⬜ Not started | — |
-| O1 | Institutions CRUD API | ⬜ Not started | — |
-| Auth slice | Login, register, reset, account | ✅ Done | 2026-08-17 |
-| App shell UX | Sidebar, theme, notifications | ✅ Done | 2026-08-17 |
+| R1 | RBAC DB fallback | Done | 2026-08-19 |
+| R2 | PermissionService + repository | Done | 2026-08-19 |
+| R3 | Seed roles + permissions | Done | 2026-08-19 |
+| R4 | loadPermissions on protected routes | Done | 2026-08-19 |
+| R5 | Redis permission cache (optional) | Done | 2026-08-19 |
+| F1 | Next.js middleware / proxy | Done | 2026-08-18 |
+| F2 | Login redirect with returnUrl | Done | 2026-08-18 |
+| F3 | Platform vs institution portal context | Done | 2026-08-18 |
+| F4 | CORS default localhost:3000 | Done | 2026-08-18 |
+| S1 | Prisma seed script | Done | 2026-08-18 |
+| S2 | Platform admin + org + institutions + sessions | Done | 2026-08-19 |
+| S3 | PRD permission matrix seed | Done | 2026-08-19 |
+| S4 | Owner / teacher / accountant seed users | Done | 2026-08-19 |
+| D1 | docker-compose.yml | Done | 2026-08-18 |
+| D2 | Backend Dockerfile | Done | 2026-08-18 |
+| D3 | GitHub Actions CI | Done | 2026-08-18 |
+| D4 | Env-only secrets in production | Done | 2026-08-18 |
+| D5 | Rate limiting middleware | Done | 2026-08-19 |
+| D6 | Expand .gitignore | Done | 2026-08-18 |
+| O1 | Institutions CRUD API + admin list/new | Done | 2026-08-19 |
+| O2 | Organizations CRUD API + admin list/new | Done | 2026-08-19 |
+| O3 | Academic session management API | Done | 2026-08-19 |
+| O4 | Institution-scoped middleware (JWT) | Done | 2026-08-19 |
+| U1 | Invite / assign / deactivate users | Done | 2026-08-19 |
+| U2 | Platform user management | Done | 2026-08-19 |
+| U3 | Role assignment UI persistence | Done | 2026-08-19 |
+| P1–P4 | Students / teachers / parents CRUD | Not started (Phase 2) | — |
+| A1–A3 | Admissions pipeline | Not started (Phase 2) | — |
+| Auth slice | Login, register, reset, account | Done | 2026-08-17 |
+| App shell UX | Sidebar, theme, notifications | Done | 2026-08-17 |
 
 ---
 
@@ -198,3 +221,5 @@ Update this table as items ship. Link to [Master Update Log](./GradGrid_Referenc
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | 2026-08-17 | Engineering | Initial ideation: foundation hardening, domain order, testing, risks, tracker |
+| 1.1 | 2026-08-19 | Engineering | Marked Phase 1 foundation + O1–O4/U3 complete; Phase 2 still open |
+| 1.2 | 2026-08-19 | Engineering | Phase 1 complete: U1/U2 user invite, role assign, deactivate + platform users |

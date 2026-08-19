@@ -1,7 +1,7 @@
 /**
  * GradGrid — Database Seed
  *
- * Creates RBAC registry, platform super-admin, and optional multi-campus demo data.
+ * Creates RBAC registry, platform super-admin, and multi-campus demo data.
  * Run: npm run prisma:seed
  */
 
@@ -26,6 +26,10 @@ const prisma = new PrismaClient({ adapter });
 
 const PLATFORM_ADMIN_EMAIL = process.env.SEED_PLATFORM_ADMIN_EMAIL || 'admin@gradgrid.app';
 const PLATFORM_ADMIN_PASSWORD = process.env.SEED_PLATFORM_ADMIN_PASSWORD || 'Admin@12345';
+const DEMO_OWNER_EMAIL = process.env.SEED_DEMO_OWNER_EMAIL || 'owner@demo.edu';
+const DEMO_OWNER_PASSWORD = process.env.SEED_DEMO_OWNER_PASSWORD || 'Owner@12345';
+const DEMO_TEACHER_EMAIL = process.env.SEED_DEMO_TEACHER_EMAIL || 'teacher@demo.edu';
+const DEMO_TEACHER_PASSWORD = process.env.SEED_DEMO_TEACHER_PASSWORD || 'Teacher@12345';
 const DEMO_ACCOUNTANT_EMAIL = process.env.SEED_DEMO_ACCOUNTANT_EMAIL || 'accountant@demo.edu';
 const DEMO_ACCOUNTANT_PASSWORD = process.env.SEED_DEMO_ACCOUNTANT_PASSWORD || 'Accountant@12345';
 
@@ -41,7 +45,6 @@ async function seedPlatformAdmin() {
   }
 
   const passwordHash = await bcrypt.hash(PLATFORM_ADMIN_PASSWORD, 12);
-
   const user = await prisma.users.create({
     data: {
       first_name: 'Platform',
@@ -69,53 +72,29 @@ async function seedPlatformAdmin() {
   return user.id;
 }
 
-async function seedMultiCampusDemo() {
-  const existing = await prisma.users.findUnique({
-    where: { email: DEMO_ACCOUNTANT_EMAIL },
-  });
-
+async function ensureInstitutionUser(opts: {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  institutionId: string;
+  roleName: string;
+  extraCampuses?: Array<{ institutionId: string; roleName: string }>;
+}) {
+  const existing = await prisma.users.findUnique({ where: { email: opts.email } });
   if (existing) {
-    console.log(`Demo accountant already exists: ${DEMO_ACCOUNTANT_EMAIL}`);
-    return;
+    console.log(`Demo user already exists: ${opts.email}`);
+    return existing.id;
   }
 
-  const passwordHash = await bcrypt.hash(DEMO_ACCOUNTANT_PASSWORD, 12);
-
-  const organization = await prisma.organizations.create({
-    data: {
-      name: 'EduTrust Foundation',
-      slug: 'edutrust-foundation',
-      email: 'contact@edutrust.edu',
-    },
-  });
-
-  const campusA = await prisma.institutions.create({
-    data: {
-      organization_id: organization.id,
-      name: 'Greenwood High School',
-      code: 'GHS-001',
-      city: 'Mumbai',
-      state: 'Maharashtra',
-    },
-  });
-
-  const campusB = await prisma.institutions.create({
-    data: {
-      organization_id: organization.id,
-      name: 'Riverside Academy',
-      code: 'RA-002',
-      city: 'Pune',
-      state: 'Maharashtra',
-    },
-  });
-
+  const passwordHash = await bcrypt.hash(opts.password, 12);
   const user = await prisma.users.create({
     data: {
-      first_name: 'Priya',
-      last_name: 'Iyer',
-      email: DEMO_ACCOUNTANT_EMAIL,
+      first_name: opts.firstName,
+      last_name: opts.lastName,
+      email: opts.email,
       user_type: 'institution',
-      institution_id: campusA.id,
+      institution_id: opts.institutionId,
       email_verified: true,
       is_active: true,
     },
@@ -129,15 +108,120 @@ async function seedMultiCampusDemo() {
     },
   });
 
-  await roleService.provisionInstitutionRoles(campusA.id, user.id);
-  await roleService.provisionInstitutionRoles(campusB.id, null);
-  await roleService.assignByName(user.id, 'accountant', campusB.id, user.id);
+  await roleService.assignByName(user.id, opts.roleName, opts.institutionId, user.id);
+  for (const extra of opts.extraCampuses || []) {
+    await roleService.assignByName(user.id, extra.roleName, extra.institutionId, user.id);
+  }
 
-  console.log('Multi-campus demo created:');
+  console.log(`Demo ${opts.roleName} created: ${opts.email} / ${opts.password}`);
+  return user.id;
+}
+
+async function seedMultiCampusDemo() {
+  let organization = await prisma.organizations.findFirst({
+    where: { slug: 'edutrust-foundation', deleted_at: null },
+  });
+
+  if (!organization) {
+    organization = await prisma.organizations.create({
+      data: {
+        name: 'EduTrust Foundation',
+        slug: 'edutrust-foundation',
+        email: 'contact@edutrust.edu',
+      },
+    });
+  }
+
+  let campusA = await prisma.institutions.findFirst({
+    where: { code: 'GHS-001', deleted_at: null },
+  });
+  if (!campusA) {
+    campusA = await prisma.institutions.create({
+      data: {
+        organization_id: organization.id,
+        name: 'Greenwood High School',
+        code: 'GHS-001',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+      },
+    });
+  }
+
+  let campusB = await prisma.institutions.findFirst({
+    where: { code: 'RA-002', deleted_at: null },
+  });
+  if (!campusB) {
+    campusB = await prisma.institutions.create({
+      data: {
+        organization_id: organization.id,
+        name: 'Riverside Academy',
+        code: 'RA-002',
+        city: 'Pune',
+        state: 'Maharashtra',
+      },
+    });
+  }
+
+  await roleService.provisionInstitutionRoles(campusA.id, null);
+  await roleService.provisionInstitutionRoles(campusB.id, null);
+
+  const existingSession = await prisma.academic_sessions.findFirst({
+    where: { institution_id: campusA.id, deleted_at: null },
+  });
+  if (!existingSession) {
+    await prisma.academic_sessions.create({
+      data: {
+        institution_id: campusA.id,
+        name: '2026-27',
+        start_date: new Date('2026-04-01'),
+        end_date: new Date('2027-03-31'),
+        is_current: true,
+      },
+    });
+    await prisma.academic_sessions.create({
+      data: {
+        institution_id: campusB.id,
+        name: '2026-27',
+        start_date: new Date('2026-04-01'),
+        end_date: new Date('2027-03-31'),
+        is_current: true,
+      },
+    });
+    console.log('Academic sessions created for demo campuses');
+  }
+
+  await ensureInstitutionUser({
+    email: DEMO_OWNER_EMAIL,
+    password: DEMO_OWNER_PASSWORD,
+    firstName: 'Anita',
+    lastName: 'Sharma',
+    institutionId: campusA.id,
+    roleName: 'institution_owner',
+    extraCampuses: [{ institutionId: campusB.id, roleName: 'institution_owner' }],
+  });
+
+  await ensureInstitutionUser({
+    email: DEMO_TEACHER_EMAIL,
+    password: DEMO_TEACHER_PASSWORD,
+    firstName: 'Ravi',
+    lastName: 'Kumar',
+    institutionId: campusA.id,
+    roleName: 'teacher',
+  });
+
+  await ensureInstitutionUser({
+    email: DEMO_ACCOUNTANT_EMAIL,
+    password: DEMO_ACCOUNTANT_PASSWORD,
+    firstName: 'Priya',
+    lastName: 'Iyer',
+    institutionId: campusA.id,
+    roleName: 'accountant',
+    extraCampuses: [{ institutionId: campusB.id, roleName: 'accountant' }],
+  });
+
+  console.log('Multi-campus demo ready:');
   console.log(`  Organization: ${organization.name}`);
   console.log(`  Campuses:     ${campusA.name}, ${campusB.name}`);
-  console.log(`  Email:        ${DEMO_ACCOUNTANT_EMAIL}`);
-  console.log(`  Password:     ${DEMO_ACCOUNTANT_PASSWORD}`);
 }
 
 async function main() {

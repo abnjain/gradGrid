@@ -1,47 +1,166 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Download, Filter } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import Link from "next/link";
+import { api, getApiErrorMessage } from "@/lib/api-client";
+import { useToast } from "@/components/ui/toast";
+import { usePermissions } from "@/lib/use-permissions";
 
-interface Item { id: string; name: string; email: string; role: string; institution: string; status: string; }
+interface PlatformUser {
+  id: string;
+  name: string;
+  email: string;
+  roleName: string;
+  roleLabel: string;
+  isActive: boolean;
+  lastLoginAt: string | null;
+}
 
-const mockData: Item[] = [{ id: "1", name: "John Admin", email: "john@gradgrid.io", role: "Super Admin", institution: "Platform", status: "Active" },
-  { id: "2", name: "Sarah Support", email: "sarah@gradgrid.io", role: "Support", institution: "Platform", status: "Active" },
-  { id: "3", name: "Mike Billing", email: "mike@gradgrid.io", role: "Billing", institution: "Platform", status: "Active" },
-  { id: "4", name: "Alice Review", email: "alice@gradgrid.io", role: "Reviewer", institution: "Platform", status: "Inactive" }];
-
-const columns = [{ key: "name", header: "User", sortable: true, width: "240px" },
-      { key: "email", header: "Email", width: "240px" },
-      { key: "role", header: "Role", width: "100px" },
-      { key: "institution", header: "Institution", width: "180px" },
-      { key: "status", header: "Status", width: "100px" }];
+function formatLastActive(value: string | null) {
+  if (!value) return "Never";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleString();
+}
 
 export default function ListPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set());
-  const filtered = searchQuery ? mockData.filter(r => Object.values(r).some(v => String(v).toLowerCase().includes(searchQuery.toLowerCase()))) : mockData;
+  const { addToast } = useToast();
+  const { can } = usePermissions();
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [rows, setRows] = React.useState<PlatformUser[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [busyId, setBusyId] = React.useState<string | null>(null);
+
+  const load = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get<{ users: PlatformUser[] }>("/platform/users");
+      setRows(res.data?.users || []);
+    } catch (err) {
+      addToast({
+        variant: "error",
+        title: "Failed to load platform users",
+        description: getApiErrorMessage(err),
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [addToast]);
+
+  React.useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function toggleActive(user: PlatformUser) {
+    setBusyId(user.id);
+    try {
+      await api.patch(`/platform/users/${user.id}/status`, { isActive: !user.isActive });
+      addToast({
+        variant: "success",
+        title: user.isActive ? "User deactivated" : "User activated",
+      });
+      await load();
+    } catch (err) {
+      addToast({
+        variant: "error",
+        title: "Update failed",
+        description: getApiErrorMessage(err),
+      });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  const filtered = rows.filter((row) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      row.name.toLowerCase().includes(q) ||
+      row.email.toLowerCase().includes(q) ||
+      row.roleLabel.toLowerCase().includes(q)
+    );
+  });
+
+  const tableData = filtered.map((row) => ({
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    role: row.roleLabel,
+    lastActive: formatLastActive(row.lastLoginAt),
+    status: row.isActive ? "Active" : "Inactive",
+    _raw: row,
+  }));
+
+  const columns = [
+    { key: "name", header: "User", sortable: true, width: "220px" },
+    { key: "email", header: "Email", width: "240px" },
+    { key: "role", header: "Role", width: "160px" },
+    { key: "lastActive", header: "Last Active", width: "160px" },
+    { key: "status", header: "Status", width: "100px" },
+    {
+      key: "actions",
+      header: "Actions",
+      width: "140px",
+      render: (item: (typeof tableData)[number]) =>
+        can("platform_users.manage") && item._raw.roleName !== "platform_super_admin" ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={busyId === item.id}
+            onClick={(e) => {
+              e.stopPropagation();
+              void toggleActive(item._raw);
+            }}
+          >
+            {item._raw.isActive ? "Deactivate" : "Activate"}
+          </Button>
+        ) : (
+          <span className="text-sm text-mid">—</span>
+        ),
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold font-display text-ink">Platform Users</h1>
-          <p className="text-sm text-mid mt-0.5">Manage all users across the platform</p>
+          <p className="text-sm text-mid mt-0.5">Manage GradGrid platform administrators</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm"><Download className="w-4 h-4" />Export</Button>
-          <Link href="/admin/users/new"><Button size="sm"><Plus className="w-4 h-4" />Add New</Button></Link>
+          {can("platform_users.manage") && (
+            <Link href="/admin/users/invite">
+              <Button size="sm">
+                <Plus className="w-4 h-4" />
+                Invite User
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <div className="w-72"><Input placeholder="Search..." iconLeft={<Search className="w-4 h-4" />} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} /></div>
-        <Button variant="ghost" size="sm"><Filter className="w-4 h-4" />Filters</Button>
+        <div className="w-72">
+          <Input
+            placeholder="Search..."
+            iconLeft={<Search className="w-4 h-4" />}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        {loading && <span className="text-sm text-mid">Loading...</span>}
       </div>
-      <Table columns={columns} data={filtered} keyExtractor={i => i.id} selectable selectedIds={selectedIds} onSelectionChange={setSelectedIds} page={1} totalPages={2} totalItems={filtered.length} />
+      <Table
+        columns={columns}
+        data={tableData}
+        keyExtractor={(i) => i.id}
+        page={1}
+        totalPages={1}
+        totalItems={tableData.length}
+      />
     </div>
   );
 }

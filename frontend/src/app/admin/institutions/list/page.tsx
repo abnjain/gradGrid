@@ -1,29 +1,83 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Download, Filter } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import Link from "next/link";
+import { api, getApiErrorMessage } from "@/lib/api-client";
+import { useToast } from "@/components/ui/toast";
 
-interface Item { id: string; name: string; org: string; plan: string; students: string; status: string; }
+interface InstitutionRow {
+  id: string;
+  name: string;
+  organizationName: string;
+  code: string;
+  studentCount: number;
+  isActive: boolean;
+  city?: string | null;
+  state?: string | null;
+}
 
-const mockData: Item[] = [{ id: "1", name: "Springfield High School", org: "EduTrust", plan: "Enterprise", students: "1,248", status: "Active" },
-  { id: "2", name: "Riverside Academy", org: "EduTrust", plan: "Professional", students: "856", status: "Active" },
-  { id: "3", name: "Mountain View School", org: "LearnCorp", plan: "Starter", students: "342", status: "Active" },
-  { id: "4", name: "Sunrise International", org: "LearnCorp", plan: "Enterprise", students: "2,100", status: "Suspended" }];
-
-const columns = [{ key: "name", header: "Institution", sortable: true, width: "260px" },
-      { key: "org", header: "Organization", width: "160px" },
-      { key: "plan", header: "Plan", width: "100px" },
-      { key: "students", header: "Students", width: "90px" },
-      { key: "status", header: "Status", width: "100px" }];
+const columns = [
+  { key: "name", header: "Institution", sortable: true, width: "260px" },
+  { key: "org", header: "Organization", width: "160px" },
+  { key: "code", header: "Code", width: "100px" },
+  { key: "students", header: "Students", width: "90px" },
+  { key: "status", header: "Status", width: "100px" },
+];
 
 export default function ListPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set());
-  const filtered = searchQuery ? mockData.filter(r => Object.values(r).some(v => String(v).toLowerCase().includes(searchQuery.toLowerCase()))) : mockData;
+  const { addToast } = useToast();
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [selectedIds, setSelectedIds] = React.useState<Set<string | number>>(new Set());
+  const [rows, setRows] = React.useState<InstitutionRow[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      try {
+        const res = await api.get<{ institutions: InstitutionRow[] }>("/platform/institutions");
+        if (!cancelled) setRows(res.data?.institutions || []);
+      } catch (err) {
+        if (!cancelled) {
+          addToast({
+            variant: "error",
+            title: "Failed to load institutions",
+            description: getApiErrorMessage(err),
+          });
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [addToast]);
+
+  const tableData = rows
+    .filter((row) => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        row.name.toLowerCase().includes(q) ||
+        row.organizationName.toLowerCase().includes(q) ||
+        row.code.toLowerCase().includes(q)
+      );
+    })
+    .map((row) => ({
+      id: row.id,
+      name: row.name,
+      org: row.organizationName,
+      code: row.code,
+      students: String(row.studentCount),
+      status: row.isActive ? "Active" : "Inactive",
+    }));
 
   return (
     <div className="flex flex-col gap-5">
@@ -33,15 +87,39 @@ export default function ListPage() {
           <p className="text-sm text-mid mt-0.5">View and manage all registered institutions</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm"><Download className="w-4 h-4" />Export</Button>
-          <Link href="/admin/institutions/new"><Button size="sm"><Plus className="w-4 h-4" />Add New</Button></Link>
+          <Link href="/admin/institutions/new">
+            <Button size="sm">
+              <Plus className="w-4 h-4" />
+              Add New
+            </Button>
+          </Link>
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <div className="w-72"><Input placeholder="Search..." iconLeft={<Search className="w-4 h-4" />} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} /></div>
-        <Button variant="ghost" size="sm"><Filter className="w-4 h-4" />Filters</Button>
+        <div className="w-72">
+          <Input
+            placeholder="Search..."
+            iconLeft={<Search className="w-4 h-4" />}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
       </div>
-      <Table columns={columns} data={filtered} keyExtractor={i => i.id} selectable selectedIds={selectedIds} onSelectionChange={setSelectedIds} page={1} totalPages={2} totalItems={filtered.length} />
+      {loading ? (
+        <p className="text-sm text-mid py-8 text-center">Loading institutions...</p>
+      ) : (
+        <Table
+          columns={columns}
+          data={tableData}
+          keyExtractor={(i) => i.id}
+          selectable
+          selectedIds={selectedIds}
+          onSelectionChange={setSelectedIds}
+          page={1}
+          totalPages={1}
+          totalItems={tableData.length}
+        />
+      )}
     </div>
   );
 }
