@@ -4,6 +4,7 @@ import {
   mockPlatformAuthApis,
   mockPlatformSession,
   mockSelectContext,
+  mockUnauthenticatedRefresh,
   mockWorkspaces,
   performInstitutionLogin,
   setSessionCookies,
@@ -25,7 +26,8 @@ test.describe("Login routing", () => {
   });
 
   test("platform login redirects to admin dashboard", async ({ page }) => {
-    await page.route("**/api/v1/auth/login", (route) =>
+    await mockUnauthenticatedRefresh(page);
+    await page.route(/\/api\/v1\/auth\/platform\/login/, (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -48,13 +50,10 @@ test.describe("Login routing", () => {
       })
     );
 
-    await page.goto("/login");
-    await page.locator('input[placeholder="you@institution.edu"]').fill("admin@gradgrid.app");
+    await page.goto("/platform/login");
+    await page.locator('input[placeholder="admin@gradgrid.app"]').fill("admin@gradgrid.app");
     await page.locator('input[placeholder="Enter your password"]').fill("Admin@12345");
-    await Promise.all([
-      page.waitForResponse((res) => res.url().includes("/auth/login") && res.ok()),
-      page.getByRole("button", { name: "Sign In" }).click(),
-    ]);
+    await page.getByRole("button", { name: "Sign In" }).click();
     await setSessionCookies(page, "platform");
     await mockPlatformAuthApis(page);
     await page.waitForURL(/\/platform\/dashboard/);
@@ -87,7 +86,7 @@ test.describe("Organization selection", () => {
   });
 
   test("shows empty state when no organizations are linked", async ({ page }) => {
-    await page.route("**/api/v1/auth/workspaces", (route) =>
+    await page.route("**/api/v1/auth/institution/workspaces**", (route) =>
       route.fulfill({
         status: 200,
         contentType: "application/json",

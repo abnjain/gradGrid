@@ -15,7 +15,7 @@ async function submitLogin(page: import("@playwright/test").Page, email: string,
 test.describe("Login", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/login");
-    await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Institution sign in" })).toBeVisible();
   });
 
   test("empty submit shows field-specific errors", async ({ page }) => {
@@ -40,7 +40,7 @@ test.describe("Login", () => {
 test.describe("Login — signup application status", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/login");
-    await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Institution sign in" })).toBeVisible();
   });
 
   test("pending application shows approval warning toast", async ({ page }) => {

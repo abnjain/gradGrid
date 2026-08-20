@@ -256,8 +256,20 @@ export async function mockInstitutionLogin(page: Page, email = "accountant@demo.
         },
       }),
     });
-  await page.route("**/api/v1/auth/**/login", fulfill);
+  await page.route(/\/api\/v1\/auth\/institution\/login/, fulfill);
   await page.route("**/api/v1/auth/login", fulfill);
+}
+
+export async function mockUnauthenticatedRefresh(page: Page) {
+  const reject = (route: { fulfill: (response: object) => Promise<void> }) =>
+    route.fulfill({
+      status: 401,
+      contentType: "application/json",
+      body: JSON.stringify({ success: false, error: { code: "UNAUTHENTICATED" } }),
+    });
+
+  await page.route("**/api/v1/auth/**/refresh", reject);
+  await page.route("**/api/v1/auth/refresh", reject);
 }
 
 export async function waitForOrganizations(page: Page) {
@@ -269,14 +281,12 @@ export async function performInstitutionLogin(
   email = "accountant@demo.edu",
   password = "Accountant@12345"
 ) {
+  await mockUnauthenticatedRefresh(page);
   await mockInstitutionLogin(page, email);
   await page.goto("/login");
   await page.locator('input[placeholder="you@institution.edu"]').fill(email);
   await page.locator('input[placeholder="Enter your password"]').fill(password);
-  await Promise.all([
-    page.waitForResponse((res) => res.url().includes("/auth/login") && res.ok()),
-    page.getByRole("button", { name: "Sign In" }).click(),
-  ]);
+  await page.getByRole("button", { name: "Sign In" }).click();
   await setSessionCookies(page, "institution");
   await mockInstitutionAuthApis(page, { email });
   await page.waitForURL(/\/app\/select-organization/);
@@ -344,7 +354,7 @@ export async function mockLoginError(
   message: string,
   status = 403
 ) {
-  await page.route("**/api/v1/auth/login", (route) =>
+  await page.route(/\/api\/v1\/auth\/institution\/login/, (route) =>
     route.fulfill({
       status,
       contentType: "application/json",

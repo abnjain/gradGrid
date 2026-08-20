@@ -20,6 +20,7 @@ import {
   NotFoundError,
   ApplicationPendingError,
   ApplicationRejectedError,
+  InternalError,
 } from '../../shared/errors';
 import { createContextLogger, auditLog } from '../../shared/utils/logger';
 import { config } from '../../config';
@@ -106,12 +107,16 @@ export class SignupRequestService {
       otp_expires_at,
     });
 
-    await sendEmail({
+    const emailSent = await sendEmail({
       to: email,
       subject: 'Verify your email — GradGrid signup',
       text: `Your GradGrid verification code is: ${otp}\n\nThis code expires in 10 minutes.`,
       html: `<p>Your GradGrid verification code is: <strong>${otp}</strong></p><p>This code expires in 10 minutes.</p>`,
     });
+
+    if (!emailSent) {
+      throw new InternalError('Unable to send verification email. Please try again later.');
+    }
 
     auditLog('SIGNUP_REQUEST_SUBMITTED', {
       userId: email,
@@ -186,14 +191,19 @@ export class SignupRequestService {
     const otp_expires_at = new Date(Date.now() + OTP_TTL_MS);
 
     await this.repository.updateOtp(request.id, otp_hash, otp_expires_at);
-    resendCooldown.set(normalized, Date.now());
 
-    await sendEmail({
+    const emailSent = await sendEmail({
       to: normalized,
       subject: 'Your GradGrid verification code',
       text: `Your verification code is: ${otp}`,
       html: `<p>Your verification code is: <strong>${otp}</strong></p>`,
     });
+
+    if (!emailSent) {
+      throw new InternalError('Unable to send verification email. Please try again later.');
+    }
+
+    resendCooldown.set(normalized, Date.now());
 
     return this.buildSignupResponse(request.id, normalized, otp);
   }
@@ -277,12 +287,16 @@ export class SignupRequestService {
 
     await this.repository.markApproved(request.id, adminUserId, user.id);
 
-    await sendEmail({
+    const emailSent = await sendEmail({
       to: request.email,
       subject: 'Your GradGrid application has been approved',
       text: `Welcome to GradGrid! Your institution account for ${request.institution_name} has been approved. You can now sign in at ${process.env.FRONTEND_URL || 'http://localhost:3000'}/login`,
       html: `<p>Welcome to GradGrid!</p><p>Your institution account for <strong>${request.institution_name}</strong> has been approved. You can now <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/login">sign in</a>.</p>`,
     });
+
+    if (!emailSent) {
+      logger.error({ requestId: request.id, email: request.email }, 'Approval email could not be delivered');
+    }
 
     auditLog('SIGNUP_REQUEST_APPROVED', {
       userId: adminUserId,
@@ -292,7 +306,7 @@ export class SignupRequestService {
       details: { createdUserId: user.id, institutionCode: request.institution_code },
     });
 
-    return { userId: user.id, email: user.email };
+    return { userId: user.id, email: user.email, emailSent };
   }
 
   async rejectRequest(id: string, adminUserId: string, reason?: string) {
@@ -304,12 +318,16 @@ export class SignupRequestService {
 
     await this.repository.markRejected(id, adminUserId, reason);
 
-    await sendEmail({
+    const emailSent = await sendEmail({
       to: request.email,
       subject: 'Update on your GradGrid application',
       text: `Your GradGrid application was not approved at this time.${reason ? ` Reason: ${reason}` : ''} You may submit a new application.`,
       html: `<p>Your GradGrid application was not approved at this time.</p>${reason ? `<p>Reason: ${reason}</p>` : ''}<p>You may submit a new application.</p>`,
     });
+
+    if (!emailSent) {
+      logger.error({ requestId: id, email: request.email }, 'Rejection email could not be delivered');
+    }
 
     auditLog('SIGNUP_REQUEST_REJECTED', {
       userId: adminUserId,
@@ -319,7 +337,7 @@ export class SignupRequestService {
       details: { reason },
     });
 
-    return { id };
+    return { id, emailSent };
   }
 
   async checkLoginBlocked(email: string): Promise<void> {
@@ -345,12 +363,16 @@ export class SignupRequestService {
 
     await this.repository.updateOtp(requestId, otp_hash, otp_expires_at);
 
-    await sendEmail({
+    const emailSent = await sendEmail({
       to: email,
       subject: 'Verify your email — GradGrid signup',
       text: `Your GradGrid verification code is: ${otp}\n\nThis code expires in 10 minutes.`,
       html: `<p>Your GradGrid verification code is: <strong>${otp}</strong></p><p>This code expires in 10 minutes.</p>`,
     });
+
+    if (!emailSent) {
+      throw new InternalError('Unable to send verification email. Please try again later.');
+    }
 
     logger.info({ requestId, email }, 'Resent signup verification for pending application');
 
@@ -358,7 +380,7 @@ export class SignupRequestService {
   }
 
   private buildSignupResponse(requestId: string, email: string, otp?: string) {
-    const exposeOtp = !config.smtp.host && otp;
+    const exposeOtp = config.isDev && !config.smtp.host && otp;
     return {
       requestId,
       email,

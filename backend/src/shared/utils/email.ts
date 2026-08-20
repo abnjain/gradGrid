@@ -30,7 +30,10 @@ function getTransporter(): Transporter | null {
 
   // No SMTP configured — dev fallback that logs the email instead of sending.
   if (!smtp.host) {
-    logger.warn('SMTP not configured — emails will be logged instead of sent');
+    logger.warn(
+      { production: config.isProd },
+      'SMTP not configured — emails will be logged instead of sent'
+    );
     return null;
   }
 
@@ -47,6 +50,37 @@ function getTransporter(): Transporter | null {
   return transporter;
 }
 
+/** Verify SMTP credentials during startup so Render logs the real failure. */
+export async function verifyEmailTransport(): Promise<boolean> {
+  const t = getTransporter();
+  if (!t) return false;
+
+  try {
+    await t.verify();
+    logger.info(
+      {
+        host: config.smtp.host,
+        port: config.smtp.port,
+        secure: config.smtp.secure,
+        userConfigured: Boolean(config.smtp.user),
+      },
+      'SMTP connection verified'
+    );
+    return true;
+  } catch (error) {
+    logger.error(
+      {
+        err: error,
+        host: config.smtp.host,
+        port: config.smtp.port,
+        secure: config.smtp.secure,
+      },
+      'SMTP connection verification failed'
+    );
+    return false;
+  }
+}
+
 /**
  * Send an email. Returns true when the email was accepted by the
  * transport (or logged in dev mode when SMTP is unset).
@@ -56,15 +90,19 @@ export async function sendEmail(input: SendEmailInput): Promise<boolean> {
 
   // Dev fallback — log the email so the flow is testable without SMTP.
   if (!t) {
-    logger.info(
-      {
-        to: input.to,
-        subject: input.subject,
-        text: input.text,
-      },
-      'EMAIL_DEV_LOG — would send email'
-    );
-    return true;
+    if (config.isDev) {
+      logger.info(
+        {
+          to: input.to,
+          subject: input.subject,
+          text: input.text,
+        },
+        'EMAIL_DEV_LOG — would send email'
+      );
+    } else {
+      logger.error({ to: input.to, subject: input.subject }, 'Email not sent — SMTP is unavailable');
+    }
+    return config.isDev;
   }
 
   try {

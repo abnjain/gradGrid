@@ -38,8 +38,8 @@ export function PermissionMatrix({
   const selected = React.useMemo(() => new Set(selectedKeys), [selectedKeys]);
   const actions = React.useMemo(() => {
     const seen: string[] = [];
-    for (const module of modules) {
-      for (const permission of module.permissions) {
+    for (const permissionModule of modules) {
+      for (const permission of permissionModule.permissions) {
         if (!seen.includes(permission.action)) seen.push(permission.action);
       }
     }
@@ -69,12 +69,12 @@ export function PermissionMatrix({
           </tr>
         </thead>
         <tbody>
-          {modules.map((module) => {
-            const byAction = new Map(module.permissions.map((p) => [p.action, p]));
+          {modules.map((permissionModule) => {
+            const byAction = new Map(permissionModule.permissions.map((p) => [p.action, p]));
             return (
-              <tr key={module.key} className="border-b border-border last:border-0">
+              <tr key={permissionModule.key} className="border-b border-border last:border-0">
                 <td className="py-2.5 pr-3 sticky left-0 bg-surface">
-                  <span className="text-sm font-medium text-ink">{module.label}</span>
+                  <span className="text-sm font-medium text-ink">{permissionModule.label}</span>
                 </td>
                 {actions.map((action) => {
                   const permission = byAction.get(action);
@@ -87,7 +87,7 @@ export function PermissionMatrix({
                         checked={selected.has(permission.key)}
                         disabled={locked}
                         onChange={() => onToggle(permission.key)}
-                        aria-label={`${module.label} ${titleCaseAction(action)}`}
+                        aria-label={`${permissionModule.label} ${titleCaseAction(action)}`}
                       />
                     </td>
                   );

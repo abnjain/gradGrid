@@ -83,12 +83,12 @@ test.describe("Admin signup requests", () => {
     await expect(page.getByRole("heading", { name: "Greenwood High", level: 2 })).toBeVisible();
   });
 
-  test("approve is disabled until email is verified", async ({ page }) => {
+  test("platform admin can approve before email verification", async ({ page }) => {
     await mockSignupRequestsList(page, [MOCK_SIGNUP_REQUEST_UNVERIFIED]);
     await page.goto("/platform/signup-requests");
 
     await expect(page.getByText("Email pending")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Approve" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Approve" })).toBeEnabled();
     await expect(page.getByRole("button", { name: "Reject" })).toBeEnabled();
   });
 });

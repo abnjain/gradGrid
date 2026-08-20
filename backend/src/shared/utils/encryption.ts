@@ -14,7 +14,6 @@ import { InternalError } from '../errors';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12; // 96-bit nonce for GCM
-const TAG_LENGTH = 16; // 128-bit auth tag
 
 function getKey(): Buffer {
   const key = config.encryption.key;

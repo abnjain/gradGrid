@@ -7,7 +7,6 @@
 
 import { Request, Response } from 'express';
 import { SeoService } from './seo.service';
-import { sitemapQuerySchema } from './seo.schema';
 import { logger } from '../../shared/utils/logger';
 
 const seoService = new SeoService();

@@ -17,6 +17,9 @@
     "prisma:studio": "prisma studio",
     "test": "tsx --test src/modules/rbac/rbac-defaults.test.ts"
   },
+  "overrides": {
+    "deepmerge-ts": "8.0.1"
+  },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
@@ -55,6 +58,7 @@
     "prettier": "^3.3.3",
     "prisma": "^7.0.0",
     "tsx": "^4.19.1",
-    "typescript": "^7.0.0"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.67.0"
   }
 }

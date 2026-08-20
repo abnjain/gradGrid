@@ -26,8 +26,9 @@ function hasAudienceSession(request: NextRequest, audience: AuthAudience): boole
 export function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
   const pathAudience = audienceFromPathname(pathname);
+  const authPath = isAuthPath(pathname);
 
-  if (isProtectedPath(pathname) && pathAudience && !hasAudienceSession(request, pathAudience)) {
+  if (isProtectedPath(pathname) && !authPath && pathAudience && !hasAudienceSession(request, pathAudience)) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = loginPathForAudience(pathAudience);
     loginUrl.search = "";

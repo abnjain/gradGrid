@@ -116,6 +116,14 @@ export function validateProductionConfig(): void {
     missing.push('MASTER_ENCRYPTION_KEY');
   }
 
+  // Signup verification, password resets, and account invitations require a
+  // real SMTP transport in production. Do not silently report success while
+  // the email service is only using the development log fallback.
+  if (!process.env.SMTP_HOST) missing.push('SMTP_HOST');
+  if (!process.env.SMTP_USER) missing.push('SMTP_USER');
+  if (!process.env.SMTP_PASS) missing.push('SMTP_PASS');
+  if (!process.env.SMTP_FROM) missing.push('SMTP_FROM');
+
   if (missing.length > 0) {
     throw new Error(
       `Production configuration invalid. Set secure values for: ${missing.join(', ')}`

@@ -17,6 +17,9 @@ export function errorHandler(
   res: Response,
   _next: NextFunction
 ): void {
+  // Express requires the four-argument error-handler signature.
+  void _next;
+
   // Log the error
   if (err instanceof AppError && err.isOperational) {
     logger.warn({ err, requestId: req.id }, 'Operational error');

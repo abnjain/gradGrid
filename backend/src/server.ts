@@ -9,6 +9,7 @@ import { config, validateProductionConfig } from './config';
 import { logger } from './shared/utils/logger';
 import { prisma } from './config/database';
 import { initCache } from './shared/utils/cache';
+import { verifyEmailTransport } from './shared/utils/email';
 
 let server: ReturnType<typeof app.listen>;
 
@@ -27,6 +28,12 @@ async function main(): Promise<void> {
   // Initialise optional Redis cache (only connects if REDIS_URL is set)
   if (config.redis.enabled) {
     await initCache();
+  }
+
+  if (config.isProd && !(await verifyEmailTransport())) {
+    logger.error('SMTP is unavailable; refusing to start without transactional email');
+    await prisma.$disconnect();
+    process.exit(1);
   }
 
   server = app.listen(Number(config.port), () => {
