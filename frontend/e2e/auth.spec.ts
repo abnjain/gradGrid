@@ -110,6 +110,7 @@ test.describe("Forgot Password", () => {
       (btn as HTMLButtonElement).click();
     });
     await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
+    await expect(page.getByText("check your Spam or Junk folder")).toBeVisible();
   });
 });
 

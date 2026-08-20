@@ -93,6 +93,7 @@ test.describe("Signup — application flow", () => {
 
     await expect(page.getByRole("heading", { name: "Verify your email" })).toBeVisible();
     await expect(page.getByLabel("Email")).toHaveValue("owner@school.edu");
+    await expect(page.getByText("check your Spam or Junk folder")).toBeVisible();
     await expect(page.getByRole("button", { name: "Verify email" })).toBeVisible();
   });
 

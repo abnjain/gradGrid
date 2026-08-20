@@ -328,6 +328,9 @@ function SignupWizard() {
               <p className="text-sm text-mid mb-6">
                 Enter your email and the 6-digit code we sent you.
               </p>
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
+                If you don&apos;t see the email, check your Spam or Junk folder.
+              </p>
               <form className="flex flex-col gap-4" onSubmit={submitOtp}>
                 <Input
                   ref={verifyEmailRef}

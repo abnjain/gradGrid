@@ -83,6 +83,9 @@ export default function ForgotPasswordPage() {
             <p className="text-sm text-mid text-center leading-[1.6] mb-8">
               We&apos;ve sent a password reset link to your email. Please check your inbox and follow the instructions.
             </p>
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-6 text-center">
+              If you don&apos;t see the email, check your Spam or Junk folder.
+            </p>
             <Link href="/login" className="block">
               <Button variant="secondary" size="lg" className="w-full">
                 <ArrowLeft className="w-4 h-4" />
