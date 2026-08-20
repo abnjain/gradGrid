@@ -31,7 +31,7 @@ async function main(): Promise<void> {
   }
 
   if (config.isProd && !(await verifyEmailTransport())) {
-    logger.error('SMTP is unavailable; refusing to start without transactional email');
+    logger.error('Resend email provider is unavailable; refusing to start without transactional email');
     await prisma.$disconnect();
     process.exit(1);
   }

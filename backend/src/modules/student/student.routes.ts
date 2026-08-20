@@ -286,7 +286,8 @@ router.post(
         success: true,
         data: {
           userId: user.id,
-          temporaryPassword: config.smtp.host ? undefined : tempPassword,
+          temporaryPassword:
+            config.email.provider === 'resend' && config.email.resendApiKey ? undefined : tempPassword,
         },
       });
     } catch (error) {

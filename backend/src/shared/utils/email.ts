@@ -1,18 +1,16 @@
 /**
  * GradGrid — Email Service
  *
- * Lightweight nodemailer wrapper for transactional emails
- * (password reset, email verification, etc.).
- *
- * When SMTP is not configured (dev), emails are "sent" to the
- * pino log stream so flows can be developed without a mail server.
+ * Transactional email is sent through Resend's HTTPS API. This works on
+ * Render Free, where outbound SMTP ports are blocked. In development, an
+ * absent API key keeps the existing log-only behavior.
  */
 
-import nodemailer, { Transporter } from 'nodemailer';
 import { config } from '../../config';
 import { createContextLogger } from './logger';
 
 const logger = createContextLogger({ module: 'email' });
+const RESEND_EMAILS_URL = 'https://api.resend.com/emails';
 
 export interface SendEmailInput {
   to: string;
@@ -21,75 +19,62 @@ export interface SendEmailInput {
   html?: string;
 }
 
-let transporter: Transporter | null = null;
-
-function getTransporter(): Transporter | null {
-  if (transporter) return transporter;
-
-  const smtp = config.smtp;
-
-  // No SMTP configured — dev fallback that logs the email instead of sending.
-  if (!smtp.host) {
-    logger.warn(
-      { production: config.isProd },
-      'SMTP not configured — emails will be logged instead of sent'
-    );
-    return null;
-  }
-
-  transporter = nodemailer.createTransport({
-    host: smtp.host,
-    port: smtp.port,
-    secure: smtp.secure, // true for 465, false for other ports
-    auth:
-      smtp.user && smtp.pass
-        ? { user: smtp.user, pass: smtp.pass }
-        : undefined,
-  });
-
-  return transporter;
+interface ResendResponse {
+  id?: string;
+  name?: string;
+  message?: string;
 }
 
-/** Verify SMTP credentials during startup so Render logs the real failure. */
-export async function verifyEmailTransport(): Promise<boolean> {
-  const t = getTransporter();
-  if (!t) return false;
+function isResendConfigured(): boolean {
+  return config.email.provider === 'resend' && Boolean(config.email.resendApiKey && config.email.from);
+}
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+async function readResendResponse(response: Response): Promise<ResendResponse> {
   try {
-    await t.verify();
-    logger.info(
-      {
-        host: config.smtp.host,
-        port: config.smtp.port,
-        secure: config.smtp.secure,
-        userConfigured: Boolean(config.smtp.user),
-      },
-      'SMTP connection verified'
-    );
-    return true;
-  } catch (error) {
-    logger.error(
-      {
-        err: error,
-        host: config.smtp.host,
-        port: config.smtp.port,
-        secure: config.smtp.secure,
-      },
-      'SMTP connection verification failed'
-    );
-    return false;
+    const body: unknown = await response.json();
+    if (!isRecord(body)) return {};
+
+    return {
+      id: typeof body.id === 'string' ? body.id : undefined,
+      name: typeof body.name === 'string' ? body.name : undefined,
+      message: typeof body.message === 'string' ? body.message : undefined,
+    };
+  } catch {
+    return {};
   }
 }
 
 /**
- * Send an email. Returns true when the email was accepted by the
- * transport (or logged in dev mode when SMTP is unset).
+ * Validate email configuration at startup. Resend has no non-delivery
+ * verification endpoint, so actual provider reachability is checked when a
+ * message is sent and the response is logged with its provider message ID.
+ */
+export async function verifyEmailTransport(): Promise<boolean> {
+  if (!isResendConfigured()) {
+    logger.error(
+      { provider: config.email.provider, apiKeyConfigured: Boolean(config.email.resendApiKey) },
+      'Resend email provider is not configured'
+    );
+    return false;
+  }
+
+  logger.info(
+    { provider: 'resend', fromConfigured: Boolean(config.email.from) },
+    'Resend email provider configured'
+  );
+  return true;
+}
+
+/**
+ * Send an email. Returns true when Resend accepts the message, or when the
+ * message is logged in development without a provider key.
  */
 export async function sendEmail(input: SendEmailInput): Promise<boolean> {
-  const t = getTransporter();
-
-  // Dev fallback — log the email so the flow is testable without SMTP.
-  if (!t) {
+  if (!isResendConfigured()) {
     if (config.isDev) {
       logger.info(
         {
@@ -99,24 +84,59 @@ export async function sendEmail(input: SendEmailInput): Promise<boolean> {
         },
         'EMAIL_DEV_LOG — would send email'
       );
-    } else {
-      logger.error({ to: input.to, subject: input.subject }, 'Email not sent — SMTP is unavailable');
+      return true;
     }
-    return config.isDev;
+
+    logger.error(
+      { provider: config.email.provider, to: input.to, subject: input.subject },
+      'Email not sent — Resend is unavailable'
+    );
+    return false;
   }
 
   try {
-    await t.sendMail({
-      from: config.smtp.from,
-      to: input.to,
-      subject: input.subject,
-      text: input.text,
-      html: input.html,
+    const response = await fetch(RESEND_EMAILS_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.email.resendApiKey}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'GradGrid/1.0',
+      },
+      body: JSON.stringify({
+        from: config.email.from,
+        to: [input.to],
+        subject: input.subject,
+        text: input.text,
+        html: input.html,
+      }),
     });
-    logger.info({ to: input.to, subject: input.subject }, 'Email sent');
+    const result = await readResendResponse(response);
+
+    if (!response.ok) {
+      logger.error(
+        {
+          provider: 'resend',
+          status: response.status,
+          code: result.name,
+          message: result.message,
+          to: input.to,
+          subject: input.subject,
+        },
+        'Failed to send email through Resend'
+      );
+      return false;
+    }
+
+    logger.info(
+      { provider: 'resend', messageId: result.id, to: input.to, subject: input.subject },
+      'Email accepted by Resend'
+    );
     return true;
   } catch (error) {
-    logger.error({ err: error, to: input.to }, 'Failed to send email');
+    logger.error(
+      { err: error, provider: 'resend', to: input.to, subject: input.subject },
+      'Email request to Resend failed'
+    );
     return false;
   }
 }

@@ -200,7 +200,11 @@ router.post(
 
       res.status(httpStatus.CREATED).json({
         success: true,
-        data: { userId: user.id, temporaryPassword: config.smtp.host ? undefined : tempPassword },
+        data: {
+          userId: user.id,
+          temporaryPassword:
+            config.email.provider === 'resend' && config.email.resendApiKey ? undefined : tempPassword,
+        },
       });
     } catch (error) {
       next(error);

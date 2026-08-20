@@ -52,16 +52,14 @@ export const config = {
   },
 
   /**
-   * SMTP — used by the email service for transactional mail.
-   * Leave SMTP_HOST empty in development to log emails instead of sending.
+   * Transactional email via an HTTPS provider. Resend is the default Render
+   * provider because free Render web services cannot open SMTP ports.
+   * Leave RESEND_API_KEY empty in development to log emails instead.
    */
-  smtp: {
-    host: process.env.SMTP_HOST || '',
-    port: parseInt(process.env.SMTP_PORT || '587', 10),
-    secure: process.env.SMTP_SECURE === 'true',
-    user: process.env.SMTP_USER || '',
-    pass: process.env.SMTP_PASS || '',
-    from: process.env.SMTP_FROM || 'GradGrid <no-reply@gradgrid.app>',
+  email: {
+    provider: (process.env.EMAIL_PROVIDER || 'resend').toLowerCase(),
+    resendApiKey: process.env.RESEND_API_KEY || '',
+    from: process.env.EMAIL_FROM || 'GradGrid <no-reply@gradgrid.app>',
   },
 
   /**
@@ -117,12 +115,14 @@ export function validateProductionConfig(): void {
   }
 
   // Signup verification, password resets, and account invitations require a
-  // real SMTP transport in production. Do not silently report success while
-  // the email service is only using the development log fallback.
-  if (!process.env.SMTP_HOST) missing.push('SMTP_HOST');
-  if (!process.env.SMTP_USER) missing.push('SMTP_USER');
-  if (!process.env.SMTP_PASS) missing.push('SMTP_PASS');
-  if (!process.env.SMTP_FROM) missing.push('SMTP_FROM');
+  // real HTTPS email provider in production. Do not silently report success
+  // while the email service is only using the development log fallback.
+  if (config.email.provider !== 'resend') {
+    missing.push('EMAIL_PROVIDER=resend');
+  } else {
+    if (!config.email.resendApiKey) missing.push('RESEND_API_KEY');
+    if (!process.env.EMAIL_FROM) missing.push('EMAIL_FROM');
+  }
 
   if (missing.length > 0) {
     throw new Error(

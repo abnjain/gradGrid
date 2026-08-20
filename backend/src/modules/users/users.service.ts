@@ -187,7 +187,8 @@ export class UsersService {
       firstName: user.first_name,
       lastName: user.last_name,
       roleName: role.name,
-      temporaryPassword: config.smtp.host ? undefined : tempPassword,
+      temporaryPassword:
+        config.email.provider === 'resend' && config.email.resendApiKey ? undefined : tempPassword,
     };
   }
 
@@ -259,7 +260,8 @@ export class UsersService {
       firstName: user.first_name,
       lastName: user.last_name,
       roleName: role.name,
-      temporaryPassword: config.smtp.host ? undefined : tempPassword,
+      temporaryPassword:
+        config.email.provider === 'resend' && config.email.resendApiKey ? undefined : tempPassword,
     };
   }
 

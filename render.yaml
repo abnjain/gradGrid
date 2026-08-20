@@ -2,7 +2,8 @@
 # Dashboard → New → Blueprint → select this repo → Apply
 #
 # Provisions: PostgreSQL + API (Docker) + Frontend (Docker)
-# Optional: add SMTP_* keys on gradgrid-api after first deploy (see render.env.example)
+# Add the Resend HTTPS email key on gradgrid-api after the first deploy
+# (see render.env.example). Render Free blocks direct SMTP connections.
 
 databases:
   - name: gradgrid-db
@@ -53,17 +54,11 @@ services:
           type: web
           name: gradgrid-web
           envVarKey: RENDER_EXTERNAL_URL
-      - key: SMTP_HOST
+      - key: EMAIL_PROVIDER
+        value: resend
+      - key: RESEND_API_KEY
         sync: false
-      - key: SMTP_PORT
-        sync: false
-      - key: SMTP_SECURE
-        sync: false
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASS
-        sync: false
-      - key: SMTP_FROM
+      - key: EMAIL_FROM
         sync: false
 
   - type: web

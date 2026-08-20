@@ -80,7 +80,7 @@ gradgrid/
 | Password hashing | bcryptjs | ^3.0.3 |
 | Validation | Zod | ^3.23.8 |
 | Logging | Pino | ^10.0.0 |
-| Email | Nodemailer | ^9.0.5 |
+| Email | Resend HTTPS API | API-based |
 | Cache | ioredis | ^5.11.1 (scaffolded) |
 | Security headers | Helmet | ^7.1.0 |
 
@@ -160,7 +160,7 @@ Shared layers:
 - Refresh token: httpOnly cookie, rotating with family-based reuse detection
 - Session tracking via `user_sessions` table
 
-**Email:** Nodemailer wrapper (`backend/src/shared/utils/email.ts`). When `SMTP_HOST` is empty, emails are logged instead of sent.
+**Email:** Resend HTTPS API integration (`backend/src/shared/utils/email.ts`). This avoids Render Free's blocked SMTP ports. In development, an absent `RESEND_API_KEY` logs the email instead of sending; production requires the Resend key and a verified `EMAIL_FROM` address.
 
 ### 5.4 Authorization (Scaffolded, Not Functional)
 
@@ -182,7 +182,7 @@ Key environment variables (`backend/.env.example`):
 | `ENCRYPTION_KEY`, `ENCRYPTION_SALT` | AES-256-GCM for sensitive fields |
 | `CORS_ORIGIN` | Allowed frontend origin (default: `localhost:5173` — **mismatch with Next on 3000**) |
 | `REDIS_URL` | Permission cache |
-| `SMTP_*` | Transactional email |
+| `EMAIL_PROVIDER`, `RESEND_API_KEY`, `EMAIL_FROM` | Transactional email through Resend HTTPS API |
 | `FRONTEND_URL` | Password reset link base |
 | Rate limit vars | Defined but **not applied** in `app.ts` |
 

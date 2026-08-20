@@ -380,7 +380,7 @@ export class SignupRequestService {
   }
 
   private buildSignupResponse(requestId: string, email: string, otp?: string) {
-    const exposeOtp = config.isDev && !config.smtp.host && otp;
+    const exposeOtp = config.isDev && !config.email.resendApiKey && otp;
     return {
       requestId,
       email,
