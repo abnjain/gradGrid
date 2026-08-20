@@ -85,6 +85,18 @@ export class SignupRequestRepository {
     });
   }
 
+  async updateEmailAndOtp(id: string, email: string, otp_hash: string, otp_expires_at: Date) {
+    return prisma.institution_signup_requests.update({
+      where: { id },
+      data: {
+        email: email.toLowerCase(),
+        otp_hash,
+        otp_expires_at,
+        updated_at: new Date(),
+      },
+    });
+  }
+
   async markEmailVerified(id: string) {
     return prisma.institution_signup_requests.update({
       where: { id },

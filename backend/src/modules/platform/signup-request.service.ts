@@ -76,8 +76,12 @@ export class SignupRequestService {
     if (phone) {
       const pendingPhone = await this.repository.findPendingByPhone(phone);
       if (pendingPhone) {
-        if (!pendingPhone.email_verified && pendingPhone.email === email) {
-          return this.resendVerificationForPending(pendingPhone.id, email);
+        if (!pendingPhone.email_verified) {
+          if (pendingPhone.email === email) {
+            return this.resendVerificationForPending(pendingPhone.id, email);
+          }
+
+          return this.changeEmailForPending(pendingPhone.id, pendingPhone.email, email);
         }
         throw new ApplicationPendingError('An application with this phone number is already under review');
       }
@@ -375,6 +379,37 @@ export class SignupRequestService {
     }
 
     logger.info({ requestId, email }, 'Resent signup verification for pending application');
+
+    return this.buildSignupResponse(requestId, email, otp);
+  }
+
+  private async changeEmailForPending(requestId: string, previousEmail: string, email: string) {
+    const otp = generateOtp();
+    const otp_hash = hashOtp(otp);
+    const otp_expires_at = new Date(Date.now() + OTP_TTL_MS);
+
+    await this.repository.updateEmailAndOtp(requestId, email, otp_hash, otp_expires_at);
+
+    const emailSent = await sendEmail({
+      to: email,
+      subject: 'Verify your email — GradGrid signup',
+      text: `Your GradGrid verification code is: ${otp}\n\nThis code expires in 10 minutes.`,
+      html: `<p>Your GradGrid verification code is: <strong>${otp}</strong></p><p>This code expires in 10 minutes.</p>`,
+    });
+
+    if (!emailSent) {
+      throw new InternalError('Unable to send verification email. Please try again later.');
+    }
+
+    auditLog('SIGNUP_EMAIL_CHANGED', {
+      userId: email,
+      role: 'applicant',
+      resourceType: 'institution_signup_request',
+      resourceId: requestId,
+      details: { previousEmail, email },
+    });
+
+    logger.info({ requestId, previousEmail, email }, 'Signup verification email changed');
 
     return this.buildSignupResponse(requestId, email, otp);
   }

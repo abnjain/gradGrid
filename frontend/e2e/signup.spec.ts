@@ -161,6 +161,60 @@ test.describe("Signup — application flow", () => {
     ).toBeVisible();
   });
 
+  test("changing the email resends the code without re-registering the phone", async ({ page }) => {
+    const registrationRequests: Record<string, unknown>[] = [];
+
+    await page.route("**/api/v1/auth/institution/register-institution", async (route) => {
+      const requestBody = route.request().postDataJSON() as Record<string, unknown>;
+      registrationRequests.push(requestBody);
+
+      await route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: {
+            requestId: "req-email-change",
+            email: requestBody.email,
+            requiresEmailVerification: true,
+          },
+        }),
+      });
+    });
+
+    await page.route("**/api/v1/auth/institution/verify-email", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          success: true,
+          data: { status: "pending", message: "Email verified." },
+        }),
+      })
+    );
+
+    await page.goto("/signup");
+    await fillSignupInstitutionStep(page);
+    await fillSignupOwnerStep(page, "old@school.edu");
+    await page.getByLabel("Phone").fill("+15551234567");
+    await page.getByRole("button", { name: "Submit application" }).click();
+    await expect(page.getByRole("heading", { name: "Verify your email" })).toBeVisible();
+
+    await page.getByLabel("Email").fill("new@school.edu");
+    await page.getByRole("button", { name: "Send code to this email" }).click();
+
+    await expect(page.getByText("Code sent to new email")).toBeVisible();
+    expect(registrationRequests).toHaveLength(2);
+    expect(registrationRequests[1]).toMatchObject({
+      email: "new@school.edu",
+      phone: "+15551234567",
+    });
+
+    await page.getByLabel("Verification code").fill("123456");
+    await page.getByRole("button", { name: "Verify email" }).click();
+    await expect(page.getByRole("heading", { name: "Application submitted" })).toBeVisible();
+  });
+
   test("invalid OTP shows validation feedback", async ({ page }) => {
     await page.goto("/signup?step=verify&email=owner@school.edu");
     await page.getByLabel("Verification code").fill("12");
