@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { REFRESH_COOKIE_NAME } from "@/lib/auth-routes";
+import {
+  REFRESH_COOKIE_NAME,
+  REFRESH_COOKIE_PLATFORM,
+  REFRESH_COOKIE_INSTITUTION,
+  REFRESH_COOKIE_PORTAL,
+  PORTAL_COOKIE_NAME,
+} from "@/lib/auth-routes";
 
 /**
  * Runtime API proxy for Render (and any split-host deployment).
@@ -23,7 +29,19 @@ const HOP_BY_HOP = new Set([
 ]);
 
 /** Cookie paths used historically for the refresh token — clear all on logout. */
-const REFRESH_COOKIE_PATHS = ["/", "/api/v1/auth/refresh"] as const;
+const REFRESH_COOKIE_NAMES = [
+  REFRESH_COOKIE_NAME,
+  REFRESH_COOKIE_PLATFORM,
+  REFRESH_COOKIE_INSTITUTION,
+  REFRESH_COOKIE_PORTAL,
+] as const;
+const REFRESH_COOKIE_PATHS = [
+  "/",
+  "/api/v1/auth/refresh",
+  "/api/v1/auth/platform/refresh",
+  "/api/v1/auth/institution/refresh",
+  "/api/v1/auth/portal/refresh",
+] as const;
 
 function getApiBase(): string | null {
   const base = process.env.API_INTERNAL_URL?.replace(/\/$/, "");
@@ -52,15 +70,18 @@ function appendUpstreamSetCookies(response: NextResponse, upstream: Response) {
 }
 
 function clearRefreshCookiesOnResponse(response: NextResponse) {
-  for (const path of REFRESH_COOKIE_PATHS) {
-    response.cookies.set(REFRESH_COOKIE_NAME, "", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path,
-      maxAge: 0,
-    });
+  for (const name of REFRESH_COOKIE_NAMES) {
+    for (const path of REFRESH_COOKIE_PATHS) {
+      response.cookies.set(name, "", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path,
+        maxAge: 0,
+      });
+    }
   }
+  response.cookies.set(PORTAL_COOKIE_NAME, "", { path: "/", maxAge: 0 });
 }
 
 function buildJsonResponse(
@@ -150,7 +171,7 @@ async function proxy(request: NextRequest, path: string[]): Promise<NextResponse
   const contentType = upstream.headers.get("content-type") || "";
   const isLogout =
     request.method === "POST" &&
-    path.join("/") === "v1/auth/logout";
+    /^v1\/auth\/(?:logout|(?:platform|institution|portal)\/logout)$/.test(path.join("/"));
 
   if (contentType.includes("application/json")) {
     return buildJsonResponse(upstream, responseText, isLogout);

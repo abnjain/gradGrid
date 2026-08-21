@@ -158,7 +158,7 @@ function Sidebar({ nav, type, institutionName, organizationName, sessionName, on
   const handleLogout = async () => {
     onClose?.();
     await logout();
-    router.push(type === "platform" ? "/platform/login" : "/login");
+    router.replace(type === "platform" ? "/platform/login" : "/login");
   };
 
   const handleSwitchInstitution = () => {

@@ -4,6 +4,7 @@ import React from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { getInstitutionPortalEntry, isTenantSelectPath } from "@/lib/auth-routes";
+import { ProtectedRouteGuard } from "@/components/auth/protected-route-guard";
 
 /**
  * Ensures institution users have selected org + campus before accessing portal modules.
@@ -42,5 +43,5 @@ export function TenantContextGuard({ children }: { children: React.ReactNode }) 
     );
   }
 
-  return <>{children}</>;
+  return <ProtectedRouteGuard audience="institution">{children}</ProtectedRouteGuard>;
 }

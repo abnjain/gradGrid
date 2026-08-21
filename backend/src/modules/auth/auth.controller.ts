@@ -12,6 +12,7 @@ import { TenantContextService } from './tenant-context.service';
 import { config } from '../../config';
 import { AuthenticatedRequest } from '../../shared/types';
 import {
+  AUTH_AUDIENCES,
   AuthAudience,
   audienceForUserType,
   refreshCookieName,
@@ -36,17 +37,22 @@ function getRefreshCookieOptions(audience: AuthAudience, overrides?: { path?: st
 }
 
 function clearAudienceRefreshCookies(res: Response, audience: AuthAudience) {
-  const name = refreshCookieName(audience);
+  const names = new Set([
+    refreshCookieName(audience),
+    ...AUTH_AUDIENCES.map((authAudience) => refreshCookieName(authAudience)),
+    'refreshToken',
+  ]);
   const paths = new Set<string>([
     config.cookies.path || '/',
     `${config.api.prefix}/auth/${audience}/refresh`,
+    ...AUTH_AUDIENCES.map((authAudience) => `${config.api.prefix}/auth/${authAudience}/refresh`),
     `${config.api.prefix}/auth/refresh`,
     '/',
   ]);
-  for (const path of paths) {
-    res.clearCookie(name, getRefreshCookieOptions(audience, { path }));
-    // Legacy single cookie during migration
-    res.clearCookie('refreshToken', getRefreshCookieOptions(audience, { path }));
+  for (const name of names) {
+    for (const path of paths) {
+      res.clearCookie(name, getRefreshCookieOptions(audience, { path }));
+    }
   }
 }
 

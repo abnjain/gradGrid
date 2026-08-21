@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
   PORTAL_COOKIE_NAME,
+  LOGGED_OUT_COOKIE_NAME,
   audienceFromPathname,
   getPortalHome,
   isAuthPath,
@@ -27,8 +28,9 @@ export function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
   const pathAudience = audienceFromPathname(pathname);
   const authPath = isAuthPath(pathname);
+  const loggedOut = request.cookies.has(LOGGED_OUT_COOKIE_NAME);
 
-  if (isProtectedPath(pathname) && !authPath && pathAudience && !hasAudienceSession(request, pathAudience)) {
+  if (isProtectedPath(pathname) && !authPath && pathAudience && (loggedOut || !hasAudienceSession(request, pathAudience))) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = loginPathForAudience(pathAudience);
     loginUrl.search = "";
@@ -51,7 +53,7 @@ export function proxy(request: NextRequest) {
     if (pathname.startsWith("/platform/")) authAudience = "platform";
     else if (pathname.startsWith("/portal/")) authAudience = "portal";
 
-    if (hasAudienceSession(request, authAudience)) {
+    if (!loggedOut && hasAudienceSession(request, authAudience)) {
       const returnUrl = searchParams.get("returnUrl");
       const portalType = request.cookies.get(PORTAL_COOKIE_NAME)?.value || authAudience;
       const destination =

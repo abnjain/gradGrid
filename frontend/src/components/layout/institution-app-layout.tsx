@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { AppShell } from "@/components/layout";
 import { TenantContextGuard } from "@/components/auth/tenant-context-guard";
+import { ProtectedRouteGuard } from "@/components/auth/protected-route-guard";
 import { useAuth } from "@/lib/auth-context";
 import { isTenantSelectPath } from "@/lib/auth-routes";
 
@@ -16,7 +17,7 @@ export function InstitutionAppLayout({ children }: { children: React.ReactNode }
 
   if (isSelectFlow) {
     return (
-      <>
+      <ProtectedRouteGuard audience="institution">
         <div className="fixed top-4 right-4 z-50 border border-border rounded-sm bg-surface/80 backdrop-blur-sm">
           <ThemeToggle />
         </div>
@@ -28,7 +29,7 @@ export function InstitutionAppLayout({ children }: { children: React.ReactNode }
           </header>
           <main className="flex-1 flex items-center justify-center p-6">{children}</main>
         </div>
-      </>
+      </ProtectedRouteGuard>
     );
   }
 

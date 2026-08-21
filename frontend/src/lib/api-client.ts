@@ -154,7 +154,8 @@ async function request<T>(
   endpoint: string,
   options: RequestInit = {},
   requireAuth = true,
-  useDirectPublic = false
+  useDirectPublic = false,
+  retryUnauthorized = true
 ): Promise<ApiResponse<T>> {
   const base = useDirectPublic && getDirectApiBase() ? getDirectApiBase()! : API_BASE;
   const url = endpoint.startsWith('http') ? endpoint : `${base}${endpoint}`;
@@ -177,7 +178,7 @@ async function request<T>(
   });
 
   // On 401, attempt token refresh and retry once
-  if (res.status === 401 && requireAuth) {
+  if (res.status === 401 && requireAuth && retryUnauthorized) {
     const refreshed = await attemptRefresh();
     if (refreshed) {
       const newToken = getAccessToken();
@@ -225,6 +226,20 @@ export const api = {
         body: data ? JSON.stringify(data) : undefined,
       },
       requireAuth
+    );
+  },
+
+  /** Authenticated request used by logout without attempting a refresh first. */
+  postNoRefresh<T>(endpoint: string, data?: unknown) {
+    return request<T>(
+      endpoint,
+      {
+        method: 'POST',
+        body: data ? JSON.stringify(data) : undefined,
+      },
+      true,
+      false,
+      false
     );
   },
 

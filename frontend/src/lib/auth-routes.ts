@@ -44,6 +44,7 @@ export const REFRESH_COOKIE_PLATFORM = "refreshToken_platform";
 export const REFRESH_COOKIE_INSTITUTION = "refreshToken_institution";
 export const REFRESH_COOKIE_PORTAL = "refreshToken_portal";
 export const PORTAL_COOKIE_NAME = "gradgrid_portal";
+export const LOGGED_OUT_COOKIE_NAME = "gradgrid_logged_out";
 
 export function refreshCookieForAudience(audience: AuthAudience): string {
   if (audience === "platform") return REFRESH_COOKIE_PLATFORM;
@@ -147,11 +148,23 @@ export function setPortalCookie(userType: AuthUserType | AuthAudience) {
   if (typeof document === "undefined") return;
   const value = audienceFromUserType(userType);
   document.cookie = `${PORTAL_COOKIE_NAME}=${value}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Strict`;
+  clearLoggedOutMarker();
 }
 
 export function clearPortalCookie() {
   if (typeof document === "undefined") return;
   document.cookie = `${PORTAL_COOKIE_NAME}=; path=/; max-age=0; SameSite=Strict`;
+}
+
+/** Prevent stale httpOnly cookies from reopening a protected page after logout. */
+export function markLoggedOut() {
+  if (typeof document === "undefined") return;
+  document.cookie = `${LOGGED_OUT_COOKIE_NAME}=1; path=/; max-age=300; SameSite=Strict`;
+}
+
+export function clearLoggedOutMarker() {
+  if (typeof document === "undefined") return;
+  document.cookie = `${LOGGED_OUT_COOKIE_NAME}=; path=/; max-age=0; SameSite=Strict`;
 }
 
 export function clearRefreshCookie(audience?: AuthAudience) {

@@ -17,6 +17,8 @@ import {
   authApiPrefix,
   clearPortalCookie,
   clearRefreshCookie,
+  clearLoggedOutMarker,
+  markLoggedOut,
   setPortalCookie,
   type AuthAudience,
 } from './auth-routes';
@@ -212,11 +214,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   const tokenRef = React.useRef<string | null>(null);
+  const authGenerationRef = React.useRef(0);
+  const sessionInvalidatedRef = React.useRef(false);
 
   useEffect(() => {
     configureAuth({
       getToken: () => tokenRef.current,
       setToken: (token: string | null) => {
+        if (token && sessionInvalidatedRef.current) return;
         tokenRef.current = token;
         if (!token) {
           setState({
@@ -229,8 +234,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       },
       onUnauthenticated: () => {
+        authGenerationRef.current += 1;
+        sessionInvalidatedRef.current = true;
         tokenRef.current = null;
         clearPortalCookie();
+        markLoggedOut();
         setState({
           user: null,
           accessToken: null,
@@ -244,6 +252,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+    const generation = authGenerationRef.current;
+
+    const isStale = () => cancelled || generation !== authGenerationRef.current;
 
     async function trySilentRefresh() {
       try {
@@ -252,11 +263,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           {},
           false
         );
-        if (cancelled || !refreshRes.success || !refreshRes.data) {
+        if (isStale()) return;
+
+        if (!refreshRes.success || !refreshRes.data) {
           // try platform then portal
           for (const path of ['/auth/platform/refresh', '/auth/portal/refresh', '/auth/refresh'] as const) {
             try {
               const alt = await api.post<{ tokens: { accessToken: string } }>(path, {}, false);
+              if (isStale()) return;
               if (alt.success && alt.data) {
                 const accessToken = alt.data.tokens.accessToken;
                 tokenRef.current = accessToken;
@@ -266,7 +280,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     ? '/auth/portal/me'
                     : '/auth/institution/me';
                 const meRes = await api.get<MeResponseData>(mePath, true);
-                if (cancelled) return;
+                if (isStale()) return;
                 if (meRes.success && meRes.data?.user) {
                   const { user, tenantContext } = mapMeUser(meRes.data.user);
                   setPortalCookie(user.userType);
@@ -291,7 +305,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         tokenRef.current = accessToken;
 
         const meRes = await api.get<MeResponseData>('/auth/institution/me', true);
-        if (cancelled) return;
+        if (isStale()) return;
 
         if (meRes.success && meRes.data?.user) {
           const { user, tenantContext } = mapMeUser(meRes.data.user);
@@ -309,7 +323,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // no session
       }
 
-      if (!cancelled) {
+      if (!isStale()) {
         setState((prev) => ({ ...prev, isLoading: false }));
       }
     }
@@ -320,6 +334,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const applySession = useCallback(
     (user: User, accessToken: string, tenantContext: TenantContext | null = null) => {
+      sessionInvalidatedRef.current = false;
+      clearLoggedOutMarker();
       tokenRef.current = accessToken;
       setState({
         user,
@@ -436,14 +452,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     const audience = audienceFromUserType(state.user?.userType);
-    try {
-      await api.post(`${authApiPrefix(audience)}/logout`);
-    } catch {
-      // proceed — still clear local session
-    }
+    authGenerationRef.current += 1;
+    sessionInvalidatedRef.current = true;
+
+    // Start the server logout while the current access token is available,
+    // without allowing a 401 to create a new refresh session.
+    const logoutRequest = api.postNoRefresh(`${authApiPrefix(audience)}/logout`);
+
+    // Clear the UI immediately so protected layouts cannot remain visible while
+    // the server revokes the session and clears its httpOnly cookies.
     tokenRef.current = null;
     clearPortalCookie();
-    clearRefreshCookie(audience);
+    clearRefreshCookie();
+    markLoggedOut();
     setState({
       user: null,
       accessToken: null,
@@ -451,6 +472,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: false,
       isLoading: false,
     });
+
+    try {
+      await logoutRequest;
+    } catch {
+      // proceed — still clear local session
+    }
+    clearRefreshCookie();
   }, [state.user?.userType]);
 
   const updateUser = useCallback((patch: Partial<Pick<User, 'name' | 'email'>>) => {

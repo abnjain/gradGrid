@@ -2,16 +2,23 @@
 
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { api, getApiErrorMessage } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 
 export default function PortalHomePage() {
+  const router = useRouter();
   const { user, logout } = useAuth();
   const { addToast } = useToast();
   const [data, setData] = React.useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = React.useState(true);
+
+  async function handleLogout() {
+    await logout();
+    router.replace("/portal/login");
+  }
 
   React.useEffect(() => {
     let cancelled = false;
@@ -52,7 +59,7 @@ export default function PortalHomePage() {
             Access is limited to your registered institution only.
           </p>
         </div>
-        <Button variant="secondary" size="sm" onClick={() => void logout()}>
+        <Button variant="secondary" size="sm" onClick={() => void handleLogout()}>
           Sign out
         </Button>
       </div>

@@ -32,6 +32,29 @@ const DEMO_TEACHER_EMAIL = process.env.SEED_DEMO_TEACHER_EMAIL || 'teacher@demo.
 const DEMO_TEACHER_PASSWORD = process.env.SEED_DEMO_TEACHER_PASSWORD || 'Teacher@12345';
 const DEMO_ACCOUNTANT_EMAIL = process.env.SEED_DEMO_ACCOUNTANT_EMAIL || 'accountant@demo.edu';
 const DEMO_ACCOUNTANT_PASSWORD = process.env.SEED_DEMO_ACCOUNTANT_PASSWORD || 'Accountant@12345';
+const RESET_SEED_PASSWORDS = process.env.SEED_RESET_PASSWORDS === 'true';
+
+async function ensureUserPassword(userId: string, password: string) {
+  const currentPassword = await prisma.user_passwords.findFirst({
+    where: { user_id: userId, is_current: true },
+  });
+  if (currentPassword && !RESET_SEED_PASSWORDS) return;
+
+  if (currentPassword) {
+    await prisma.user_passwords.updateMany({
+      where: { user_id: userId, is_current: true },
+      data: { is_current: false },
+    });
+  }
+
+  await prisma.user_passwords.create({
+    data: {
+      user_id: userId,
+      password_hash: await bcrypt.hash(password, 12),
+      is_current: true,
+    },
+  });
+}
 
 async function seedPlatformAdmin() {
   const existing = await prisma.users.findUnique({
@@ -40,6 +63,17 @@ async function seedPlatformAdmin() {
 
   if (existing) {
     console.log(`Platform admin already exists: ${PLATFORM_ADMIN_EMAIL}`);
+    await prisma.users.update({
+      where: { id: existing.id },
+      data: {
+        first_name: 'Platform',
+        last_name: 'Admin',
+        user_type: 'platform',
+        email_verified: true,
+        is_active: true,
+      },
+    });
+    await ensureUserPassword(existing.id, PLATFORM_ADMIN_PASSWORD);
     await assignPlatformSuperAdmin(existing.id);
     return existing.id;
   }
@@ -82,39 +116,81 @@ async function ensureInstitutionUser(opts: {
   extraCampuses?: Array<{ institutionId: string; roleName: string }>;
 }) {
   const existing = await prisma.users.findUnique({ where: { email: opts.email } });
-  if (existing) {
-    console.log(`Demo user already exists: ${opts.email}`);
-    return existing.id;
-  }
+  const user = existing
+    ? await prisma.users.update({
+        where: { id: existing.id },
+        data: {
+          first_name: opts.firstName,
+          last_name: opts.lastName,
+          user_type: 'institution',
+          institution_id: opts.institutionId,
+          email_verified: true,
+          is_active: true,
+        },
+      })
+    : await prisma.users.create({
+        data: {
+          first_name: opts.firstName,
+          last_name: opts.lastName,
+          email: opts.email,
+          user_type: 'institution',
+          institution_id: opts.institutionId,
+          email_verified: true,
+          is_active: true,
+        },
+      });
 
-  const passwordHash = await bcrypt.hash(opts.password, 12);
-  const user = await prisma.users.create({
-    data: {
-      first_name: opts.firstName,
-      last_name: opts.lastName,
-      email: opts.email,
-      user_type: 'institution',
-      institution_id: opts.institutionId,
-      email_verified: true,
-      is_active: true,
-    },
-  });
-
-  await prisma.user_passwords.create({
-    data: {
-      user_id: user.id,
-      password_hash: passwordHash,
-      is_current: true,
-    },
-  });
+  await ensureUserPassword(user.id, opts.password);
 
   await roleService.assignByName(user.id, opts.roleName, opts.institutionId, user.id);
   for (const extra of opts.extraCampuses || []) {
     await roleService.assignByName(user.id, extra.roleName, extra.institutionId, user.id);
   }
 
-  console.log(`Demo ${opts.roleName} created: ${opts.email} / ${opts.password}`);
+  console.log(
+    `Demo ${opts.roleName} ${existing ? 'updated' : 'created'}: ${opts.email} / ${opts.password}`
+  );
   return user.id;
+}
+
+async function ensurePortalUser(opts: {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  userType: 'student' | 'parent';
+  institutionId: string;
+}) {
+  const existing = await prisma.users.findUnique({ where: { email: opts.email } });
+  const user = existing
+    ? await prisma.users.update({
+        where: { id: existing.id },
+        data: {
+          first_name: opts.firstName,
+          last_name: opts.lastName,
+          user_type: opts.userType,
+          institution_id: opts.institutionId,
+          email_verified: true,
+          is_active: true,
+        },
+      })
+    : await prisma.users.create({
+        data: {
+          first_name: opts.firstName,
+          last_name: opts.lastName,
+          email: opts.email,
+          user_type: opts.userType,
+          institution_id: opts.institutionId,
+          email_verified: true,
+          is_active: true,
+        },
+      });
+
+  await ensureUserPassword(user.id, opts.password);
+  console.log(
+    `Portal ${opts.userType} ${existing ? 'updated' : 'created'}: ${opts.email} / ${opts.password}`
+  );
+  return user;
 }
 
 async function seedMultiCampusDemo() {
@@ -165,30 +241,27 @@ async function seedMultiCampusDemo() {
   await roleService.provisionInstitutionRoles(campusA.id, null);
   await roleService.provisionInstitutionRoles(campusB.id, null);
 
-  const existingSession = await prisma.academic_sessions.findFirst({
-    where: { institution_id: campusA.id, deleted_at: null },
-  });
-  if (!existingSession) {
-    await prisma.academic_sessions.create({
-      data: {
-        institution_id: campusA.id,
-        name: '2026-27',
-        start_date: new Date('2026-04-01'),
-        end_date: new Date('2027-03-31'),
-        is_current: true,
-      },
+  async function ensureAcademicSession(institutionId: string) {
+    const existing = await prisma.academic_sessions.findFirst({
+      where: { institution_id: institutionId, name: '2026-27', deleted_at: null },
     });
-    await prisma.academic_sessions.create({
-      data: {
-        institution_id: campusB.id,
-        name: '2026-27',
-        start_date: new Date('2026-04-01'),
-        end_date: new Date('2027-03-31'),
-        is_current: true,
-      },
-    });
-    console.log('Academic sessions created for demo campuses');
+    return (
+      existing ||
+      prisma.academic_sessions.create({
+        data: {
+          institution_id: institutionId,
+          name: '2026-27',
+          start_date: new Date('2026-04-01'),
+          end_date: new Date('2027-03-31'),
+          is_current: true,
+        },
+      })
+    );
   }
+
+  const session = await ensureAcademicSession(campusA.id);
+  await ensureAcademicSession(campusB.id);
+  console.log('Academic sessions ready for demo campuses');
 
   await ensureInstitutionUser({
     email: DEMO_OWNER_EMAIL,
@@ -219,17 +292,33 @@ async function seedMultiCampusDemo() {
     extraCampuses: [{ institutionId: campusB.id, roleName: 'accountant' }],
   });
 
-  const session =
-    (await prisma.academic_sessions.findFirst({
-      where: { institution_id: campusA.id, deleted_at: null },
+  const demoClass =
+    (await prisma.classes.findFirst({
+      where: {
+        institution_id: campusA.id,
+        academic_session_id: session.id,
+        name: 'Class 10',
+        deleted_at: null,
+      },
     })) ||
-    (await prisma.academic_sessions.create({
+    (await prisma.classes.create({
       data: {
         institution_id: campusA.id,
-        name: '2026-27',
-        start_date: new Date('2026-04-01'),
-        end_date: new Date('2027-03-31'),
-        is_current: true,
+        academic_session_id: session.id,
+        name: 'Class 10',
+        sort_order: 10,
+      },
+    }));
+
+  const demoSection =
+    (await prisma.sections.findFirst({
+      where: { class_id: demoClass.id, name: 'A', deleted_at: null },
+    })) ||
+    (await prisma.sections.create({
+      data: {
+        institution_id: campusA.id,
+        class_id: demoClass.id,
+        name: 'A',
       },
     }));
 
@@ -238,28 +327,14 @@ async function seedMultiCampusDemo() {
   const DEMO_PARENT_EMAIL = process.env.SEED_DEMO_PARENT_EMAIL || 'parent@demo.edu';
   const DEMO_PARENT_PASSWORD = process.env.SEED_DEMO_PARENT_PASSWORD || 'Parent@12345';
 
-  let studentUser = await prisma.users.findUnique({ where: { email: DEMO_STUDENT_EMAIL } });
-  if (!studentUser) {
-    studentUser = await prisma.users.create({
-      data: {
-        first_name: 'Aarav',
-        last_name: 'Sharma',
-        email: DEMO_STUDENT_EMAIL,
-        user_type: 'student',
-        institution_id: campusA.id,
-        email_verified: true,
-        is_active: true,
-      },
-    });
-    await prisma.user_passwords.create({
-      data: {
-        user_id: studentUser.id,
-        password_hash: await bcrypt.hash(DEMO_STUDENT_PASSWORD, 12),
-        is_current: true,
-      },
-    });
-    console.log(`Portal student: ${DEMO_STUDENT_EMAIL} / ${DEMO_STUDENT_PASSWORD}`);
-  }
+  const studentUser = await ensurePortalUser({
+    email: DEMO_STUDENT_EMAIL,
+    password: DEMO_STUDENT_PASSWORD,
+    firstName: 'Aarav',
+    lastName: 'Sharma',
+    userType: 'student',
+    institutionId: campusA.id,
+  });
 
   let student = await prisma.students.findFirst({
     where: { institution_id: campusA.id, admission_number: 'ADM-1001', deleted_at: null },
@@ -277,37 +352,67 @@ async function seedMultiCampusDemo() {
         email: DEMO_STUDENT_EMAIL,
         status: 'active',
         gender: 'male',
+        date_of_birth: new Date('2010-07-15'),
+        class_id: demoClass.id,
+        section_id: demoSection.id,
+        phone: '+919876543211',
+        address: '12 Demo Road, Mumbai',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        pincode: '400001',
       },
     });
-  } else if (!student.user_id) {
-    await prisma.students.update({
+  } else {
+    student = await prisma.students.update({
       where: { id: student.id },
-      data: { user_id: studentUser.id },
+      data: {
+        user_id: studentUser.id,
+        academic_session_id: session.id,
+        first_name: 'Aarav',
+        last_name: 'Sharma',
+        roll_number: '10101',
+        email: DEMO_STUDENT_EMAIL,
+        status: 'active',
+        gender: 'male',
+        date_of_birth: new Date('2010-07-15'),
+        class_id: demoClass.id,
+        section_id: demoSection.id,
+        phone: '+919876543211',
+        address: '12 Demo Road, Mumbai',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        pincode: '400001',
+      },
     });
   }
 
-  let parentUser = await prisma.users.findUnique({ where: { email: DEMO_PARENT_EMAIL } });
-  if (!parentUser) {
-    parentUser = await prisma.users.create({
+  const enrollment = await prisma.student_section_enrollments.findFirst({
+    where: { student_id: student.id, academic_session_id: session.id },
+  });
+  if (!enrollment) {
+    await prisma.student_section_enrollments.create({
       data: {
-        first_name: 'Neha',
-        last_name: 'Sharma',
-        email: DEMO_PARENT_EMAIL,
-        user_type: 'parent',
         institution_id: campusA.id,
-        email_verified: true,
-        is_active: true,
+        section_id: demoSection.id,
+        student_id: student.id,
+        academic_session_id: session.id,
       },
     });
-    await prisma.user_passwords.create({
-      data: {
-        user_id: parentUser.id,
-        password_hash: await bcrypt.hash(DEMO_PARENT_PASSWORD, 12),
-        is_current: true,
-      },
+  } else {
+    await prisma.student_section_enrollments.update({
+      where: { id: enrollment.id },
+      data: { institution_id: campusA.id, section_id: demoSection.id },
     });
-    console.log(`Portal parent: ${DEMO_PARENT_EMAIL} / ${DEMO_PARENT_PASSWORD}`);
   }
+
+  const parentUser = await ensurePortalUser({
+    email: DEMO_PARENT_EMAIL,
+    password: DEMO_PARENT_PASSWORD,
+    firstName: 'Neha',
+    lastName: 'Sharma',
+    userType: 'parent',
+    institutionId: campusA.id,
+  });
 
   let parent = await prisma.parents.findFirst({
     where: { institution_id: campusA.id, email: DEMO_PARENT_EMAIL, deleted_at: null },
@@ -324,10 +429,17 @@ async function seedMultiCampusDemo() {
         email: DEMO_PARENT_EMAIL,
       },
     });
-  } else if (!parent.user_id) {
-    await prisma.parents.update({
+  } else {
+    parent = await prisma.parents.update({
       where: { id: parent.id },
-      data: { user_id: parentUser.id },
+      data: {
+        user_id: parentUser.id,
+        first_name: 'Neha',
+        last_name: 'Sharma',
+        relation: 'mother',
+        phone: '+919876543210',
+        email: DEMO_PARENT_EMAIL,
+      },
     });
   }
 
@@ -337,6 +449,11 @@ async function seedMultiCampusDemo() {
   if (!link) {
     await prisma.student_parent_links.create({
       data: { student_id: student.id, parent_id: parent.id, is_primary: true },
+    });
+  } else if (!link.is_primary) {
+    await prisma.student_parent_links.update({
+      where: { id: link.id },
+      data: { is_primary: true },
     });
   }
 

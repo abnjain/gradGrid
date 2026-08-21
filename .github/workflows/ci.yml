@@ -130,6 +130,7 @@ jobs:
           npx playwright test
           e2e/admin-signup-requests.spec.ts
           e2e/auth.spec.ts
+          e2e/logout.spec.ts
           e2e/phase2.spec.ts
           e2e/signup.spec.ts
           e2e/tenant-routing.spec.ts

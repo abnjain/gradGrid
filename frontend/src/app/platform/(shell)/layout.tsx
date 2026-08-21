@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import React from "react";
 import { AppShell } from "@/components/layout";
+import { ProtectedRouteGuard } from "@/components/auth/protected-route-guard";
 
 export const metadata: Metadata = {
   title: "Platform | GradGrid",
@@ -8,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function PlatformLayout({ children }: { children: React.ReactNode }) {
-  return <AppShell type="platform">{children}</AppShell>;
+  return (
+    <ProtectedRouteGuard audience="platform">
+      <AppShell type="platform">{children}</AppShell>
+    </ProtectedRouteGuard>
+  );
 }
