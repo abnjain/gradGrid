@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ interface EnquiryRow {
 }
 
 export default function AdmissionsPipelinePage() {
+  const router = useRouter();
   const { addToast } = useToast();
   const { can } = usePermissions();
   const [rows, setRows] = React.useState<EnquiryRow[]>([]);
@@ -140,6 +142,7 @@ export default function AdmissionsPipelinePage() {
           ]}
           data={filtered}
           keyExtractor={(i) => i.id}
+          onRowClick={(item) => router.push(`/app/admissions/${item.id}`)}
           page={1}
           totalPages={1}
           totalItems={filtered.length}

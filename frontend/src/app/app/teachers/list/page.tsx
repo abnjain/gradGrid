@@ -1,94 +1,104 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
+import { useRouter } from "next/navigation";
 import { Table, PersonCell } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Download, Filter } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import Link from "next/link";
+import { api, getApiErrorMessage } from "@/lib/api-client";
+import { useToast } from "@/components/ui/toast";
+import { usePermissions } from "@/lib/use-permissions";
 
-interface TeachersItem {
+interface TeacherRow {
   id: string;
-  name: { name: string; subtitle?: string; badge?: { text: string; variant: string } };
-  department: string;
-  subjects: string;
-  classes: string;
-  status: string;
+  name: string;
+  email: string;
+  phone: string;
+  employeeCode: string | null;
+  departmentName: string | null;
+  designation: string | null;
+  employmentStatus: string;
 }
 
-const mockData: TeachersItem[] = [
-{ id: "1", name: { name: "Dr. Ananya Gupta", subtitle: "ananya.g@school.edu", badge: { text: "Active", variant: "status-active" } }, department: "Science", subjects: "Physics, Chemistry", classes: "11, 12", status: "Active" },
-  { id: "2", name: { name: "Mr. Rajesh Kumar", subtitle: "rajesh.k@school.edu", badge: { text: "Active", variant: "status-active" } }, department: "Mathematics", subjects: "Algebra, Calculus", classes: "10, 11, 12", status: "Active" },
-  { id: "3", name: { name: "Ms. Meera Iyer", subtitle: "meera.i@school.edu", badge: { text: "Active", variant: "status-active" } }, department: "English", subjects: "Literature, Grammar", classes: "9, 10", status: "Active" },
-  { id: "4", name: { name: "Mr. Sunil Rao", subtitle: "sunil.r@school.edu", badge: { text: "On Leave", variant: "status-pending" } }, department: "Social Studies", subjects: "History, Geography", classes: "8, 9, 10", status: "On Leave" },
-  { id: "5", name: { name: "Ms. Pooja Singh", subtitle: "pooja.s@school.edu", badge: { text: "Active", variant: "status-active" } }, department: "Science", subjects: "Biology", classes: "10, 11", status: "Active" }
-];
-
-const columns = [
-  { key: "name", header: "Teacher", sortable: true, width: "280px",
-    render: (item: TeachersItem) => <PersonCell person={item.name} /> },
-      { key: "department", header: "Department", sortable: true, width: "140px" },
-      { key: "subjects", header: "Subjects", width: "180px" },
-      { key: "classes", header: "Classes", width: "100px" },
-      { key: "status", header: "Status", width: "100px" }
-];
-
 export default function TeachersListPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set());
+  const router = useRouter();
+  const { addToast } = useToast();
+  const { can } = usePermissions();
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [rows, setRows] = React.useState<TeacherRow[]>([]);
+  const [loading, setLoading] = React.useState(true);
 
-  const filtered = searchQuery
-    ? mockData.filter(row =>
-        String(row.name?.name || row.name || "").toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : mockData;
+  const load = React.useCallback(async () => {
+    setLoading(true);
+    try {
+      const query = searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : "";
+      const res = await api.get<{ teachers: TeacherRow[] }>(`/teachers${query}`);
+      setRows(res.data?.teachers || []);
+    } catch (err) {
+      addToast({ variant: "error", title: "Failed to load teachers", description: getApiErrorMessage(err) });
+    } finally {
+      setLoading(false);
+    }
+  }, [addToast, searchQuery]);
+
+  React.useEffect(() => { void load(); }, [load]);
+
+  async function archiveTeacher(id: string) {
+    if (!window.confirm("Archive this teacher record?")) return;
+    try {
+      await api.delete(`/teachers/${id}`);
+      addToast({ variant: "success", title: "Teacher archived" });
+      await load();
+    } catch (err) {
+      addToast({ variant: "error", title: "Archive failed", description: getApiErrorMessage(err) });
+    }
+  }
+
+  const tableData = rows.map((row) => ({
+    id: row.id,
+    teacher: {
+      name: row.name,
+      subtitle: row.email,
+      badge: { text: row.employmentStatus, variant: row.employmentStatus === "active" ? "status-active" : "status-inactive" },
+    },
+    employeeCode: row.employeeCode || "—",
+    department: row.departmentName || "—",
+    designation: row.designation || "—",
+    phone: row.phone,
+  }));
 
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold font-display text-ink">Teachers</h1>
-          <p className="text-sm text-mid mt-0.5">View and manage all teaching staff</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm">
-            <Download className="w-4 h-4" />
-            Export
-          </Button>
-          <Link href="/app/teachers/new"><Button size="sm"><Plus className="w-4 h-4" />
-              Add New</Button></Link>
-        </div>
+        <div><h1 className="text-xl font-bold font-display text-ink">Teachers</h1><p className="text-sm text-mid mt-0.5">Institution-scoped teaching and staff records.</p></div>
+        {can("teachers.create") && <Link href="/app/teachers/new"><Button size="sm"><Plus className="w-4 h-4" />Add Teacher</Button></Link>}
       </div>
-
-      <div className="flex items-center gap-3">
-        <div className="w-72">
-          <Input
-            placeholder="Search..."
-            iconLeft={<Search className="w-4 h-4" />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <Button variant="ghost" size="sm">
-          <Filter className="w-4 h-4" />
-          Filters
-        </Button>
-      </div>
-
-      <Table
-        columns={columns}
-        data={filtered}
-        keyExtractor={(item) => item.id}
-        selectable
-        selectedIds={selectedIds}
-        onSelectionChange={setSelectedIds}
-        onRowClick={(item) => { window.location.href = `/app/teachers/${item.id}`; }}
-        bulkActions={selectedIds.size > 0 ? <span className="text-sm text-mid">{selectedIds.size} selected</span> : undefined}
-        page={1}
-        totalPages={3}
-        totalItems={filtered.length}
-      />
+      <div className="w-72"><Input placeholder="Search teachers..." iconLeft={<Search className="w-4 h-4" />} value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} /></div>
+      {loading ? <p className="text-sm text-mid">Loading teachers...</p> : (
+        <Table
+          columns={[
+            { key: "teacher", header: "Teacher", sortable: true, width: "260px", render: (item: (typeof tableData)[number]) => <PersonCell person={item.teacher} /> },
+            { key: "employeeCode", header: "Employee code", width: "130px" },
+            { key: "department", header: "Department", width: "150px" },
+            { key: "designation", header: "Designation", width: "160px" },
+            { key: "phone", header: "Phone", width: "140px" },
+            { key: "actions", header: "Actions", width: "160px", render: (item: (typeof tableData)[number]) => (
+              <div className="flex items-center gap-2">
+                {can("teachers.update") && <Button size="sm" variant="secondary" onClick={(event) => { event.stopPropagation(); router.push(`/app/teachers/${item.id}/edit`); }}>Edit</Button>}
+                {can("teachers.delete") && <Button size="sm" variant="ghost" onClick={(event) => { event.stopPropagation(); void archiveTeacher(item.id); }}>Archive</Button>}
+              </div>
+            ) },
+          ]}
+          data={tableData}
+          keyExtractor={(item) => item.id}
+          onRowClick={(item) => router.push(`/app/teachers/${item.id}`)}
+          page={1}
+          totalPages={1}
+          totalItems={tableData.length}
+        />
+      )}
     </div>
   );
 }

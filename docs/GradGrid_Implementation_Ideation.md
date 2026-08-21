@@ -1,9 +1,9 @@
 # GradGrid Implementation Ideation
 
-**Document Version:** 1.3  
+**Document Version:** 1.4
 **Status:** Internal Reference (Agent / Engineering)  
 **Document Type:** Engineering Backlog & Ideation  
-**Last Updated:** 2026-08-19  
+**Last Updated:** 2026-08-20
 **Governed By:** [GradGrid_Constitution_Documentation.md](./GradGrid_Constitution_Documentation.md)
 
 **Related Documents:**
@@ -211,12 +211,12 @@ Update this table as items ship. Link to [Master Update Log](./GradGrid_Referenc
 | U3 | Role assignment UI persistence | Done | 2026-08-19 |
 | AUTH-SPLIT | Separate auth APIs + FE trees: `/platform`, `/app`, `/portal` | Done | 2026-08-19 |
 | P1 | Students CRUD + portal invite (institution-scoped) | Done | 2026-08-19 |
-| P2 | Teachers / staff CRUD | Not started | — |
+| P2 | Teachers / staff CRUD | Done | 2026-08-20 |
 | P3 | Parents CRUD + child links + portal invite | Done | 2026-08-19 |
 | P4 | Student CSV export | Done | 2026-08-19 |
 | A1 | Enquiry list/create + status transitions | Done | 2026-08-19 |
 | A2 | Convert enquiry → student + parent link | Done | 2026-08-19 |
-| A3 | Enquiry document upload | Not started | — |
+| A3 | Enquiry document upload | Done | 2026-08-20 |
 | PORTAL | Student/parent login: own institute only; student ID card/class; parent linked children only | Done | 2026-08-19 |
 | Auth slice | Login, register, reset, account | Done | 2026-08-17 |
 | App shell UX | Sidebar, theme, notifications | Done | 2026-08-17 |
@@ -231,3 +231,4 @@ Update this table as items ship. Link to [Master Update Log](./GradGrid_Referenc
 | 1.1 | 2026-08-19 | Engineering | Marked Phase 1 foundation + O1–O4/U3 complete; Phase 2 still open |
 | 1.2 | 2026-08-19 | Engineering | Phase 1 complete: U1/U2 user invite, role assign, deactivate + platform users |
 | 1.3 | 2026-08-19 | Engineering | Auth split (`/platform` `/app` `/portal`); learner portal scope; Phase 2 students/parents/admissions APIs |
+| 1.4 | 2026-08-20 | Engineering | Completed remaining Phase 2 tracker items: institution-scoped teacher/staff CRUD and admission enquiry document upload/download/delete with Playwright coverage |

@@ -1,9 +1,9 @@
 # GradGrid Reference Documentation Index
 
-**Document Version:** 1.0  
+**Document Version:** 1.1
 **Status:** Internal Reference (Agent / Engineering)  
 **Document Type:** Documentation Registry & Update Tracker  
-**Last Updated:** 2026-08-17  
+**Last Updated:** 2026-08-20
 **Governed By:** [GradGrid_Constitution_Documentation.md](./GradGrid_Constitution_Documentation.md)
 
 > **Usage note:** This index and linked reference documents are maintained for engineering/agent context. They live only under `docs/` and are not required to be pushed to the remote repository unless explicitly requested.
@@ -85,6 +85,7 @@ All changes to implementation reference documents (and significant cross-doc upd
 
 | Date | Document(s) Updated | Version | Author | Summary of Changes |
 |------|---------------------|---------|--------|-------------------|
+| 2026-08-20 | `GradGrid_Implementation_Ideation.md`, `GradGrid_Reference_Index.md`, `GradGrid_Repository_Status_Report.md` | Ideation 1.4 | Engineering | Phase 1 verification completed; remaining Phase 2 tracker work (teacher/staff CRUD and admission enquiry documents) completed and tested |
 | 2026-08-19 | `GradGrid_Auth_Portal_Split.md`, Ideation 1.3, IA, PRD, Status Report, Reference Index | — | Engineering | Auth/FE split `/platform` `/app` `/portal`; learner portal scope; Phase 2 students/parents/admissions |
 | 2026-08-17 | `GradGrid_Reference_Index.md` | 1.0 | Engineering | **Created.** Master index, document registry, cross-reference map, update log system |
 | 2026-08-17 | `GradGrid_Implementation_Ideation.md` | 1.0 | Engineering | **Created.** Prioritized engineering backlog, phase alignment, risk mitigations |
@@ -119,8 +120,8 @@ All changes to implementation reference documents (and significant cross-doc upd
 | PRD Phase | Current State (Status Report) | Next Actions (Ideation) |
 |-----------|------------------------------|-------------------------|
 | Phase 0 — Product & Architecture | ~ Complete (docs); code foundation started | §1 Foundation hardening |
-| Phase 1 — Platform Foundation | Auth ✅; RBAC ❌; Orgs ❌ | §2.1, §3.1 |
-| Phase 2 — Admission & Institution Mgmt | Schema ✅; API/UI stubs | §3.2 |
+| Phase 1 — Platform Foundation | Auth, RBAC, orgs/institutions, tenant routing, seed, CI, Docker, and user management ✅ | Ideation §2–§3.2 |
+| Phase 2 — Admission & Institution Mgmt | Students, parents, admissions, teacher/staff CRUD, portal scope, and enquiry documents ✅; broader academic/operations modules remain deferred | Ideation §3.3–§3.4 |
 | Phase 3+ | Schema only | Deferred in ideation |
 
 ---
@@ -153,16 +154,15 @@ When the codebase changes materially, follow this workflow:
 
 ## 7. Quick Lookup — Current State (Snapshot)
 
-*Last synced: 2026-08-17. See [Status Report](./GradGrid_Repository_Status_Report.md) for full detail.*
+*Last synced: 2026-08-20. The older Status Report remains a historical snapshot; use [Implementation Ideation §7](./GradGrid_Implementation_Ideation.md#7-completion-tracker) for the current tracker.*
 
 | Area | State |
 |------|-------|
-| Phase | Late Phase 0 / early Phase 1 |
-| Backend APIs live | Auth (+ partial SEO) |
-| Frontend pages | 157 total; ~80+ placeholders |
-| DB models | 57 (Prisma); 2 migrations |
-| Integrated vertical slice | Auth + account management |
-| Production blockers | RBAC, route guards, seed, DevOps, domain APIs |
+| Phase | Phase 2 tracker complete; Phase 3+ deferred |
+| Backend APIs live | Auth, platform tenants/users/RBAC, students, parents, admissions, portal, teachers/staff |
+| Integrated vertical slices | Auth + tenant routing; platform management; institution people/admissions; learner portal |
+| Database migrations | 5 applied migration directories; no new migration required for the existing staff/document models |
+| Remaining scope | Academic operations, attendance, examination, finance, library, communication, reports, durable object-storage provider |
 
 ---
 
@@ -171,3 +171,4 @@ When the codebase changes materially, follow this workflow:
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | 2026-08-17 | Engineering | Initial index, registry, update log, cross-reference map |
+| 1.1 | 2026-08-20 | Engineering | Synced current Phase 1 verification and Phase 2 tracker completion status |

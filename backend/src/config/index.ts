@@ -62,6 +62,12 @@ export const config = {
     from: process.env.EMAIL_FROM || 'GradGrid <no-reply@gradgrid.app>',
   },
 
+  storage: {
+    provider: (process.env.FILE_STORAGE_PROVIDER || 'local').toLowerCase(),
+    localDir: process.env.FILE_STORAGE_DIR || './storage',
+    bucket: process.env.FILE_STORAGE_BUCKET || 'gradgrid',
+  },
+
   /**
    * Frontend origin — used to build password reset links.
    */

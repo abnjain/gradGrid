@@ -1,14 +1,16 @@
 # GradGrid Repository Status Report
 
-**Document Version:** 1.0  
+**Document Version:** 1.1
 **Status:** Internal Reference (Agent / Engineering)  
 **Document Type:** Implementation Snapshot  
-**Last Updated:** 2026-08-17  
+**Last Updated:** 2026-08-20
 **Scope:** Full repository analysis — backend, frontend, database, DevOps, security, testing  
 **Index:** [GradGrid_Reference_Index.md](./GradGrid_Reference_Index.md)  
 **Next Steps:** [GradGrid_Implementation_Ideation.md](./GradGrid_Implementation_Ideation.md)
 
 > **Usage note:** Maintained under `docs/` for agent/engineering reference. Update this document and the [Master Update Log](./GradGrid_Reference_Index.md#4-master-update-log) when the codebase changes materially. Not pushed to remote unless explicitly requested.
+
+> **Current-state addendum (2026-08-20):** The original sections below are retained as historical analysis from 2026-08-17. The current implementation has since completed the Phase 1 foundation and the tracked Phase 2 people/admissions slice. Current authoritative status is [GradGrid_Implementation_Ideation.md §7](./GradGrid_Implementation_Ideation.md#7-completion-tracker): RBAC fallback/service/seed, Next proxy and portal split, Docker/CI/rate limiting, organization/institution/session management, platform/institution user management, student and parent APIs, learner portal scoping, admissions pipeline, teacher/staff CRUD, and admission-enquiry document storage flows are implemented. Academic operations, attendance, examinations, finance, library, communication, and reports remain deferred. The default document storage adapter is local filesystem storage; durable object storage remains an operational follow-up for production deployments.
 
 ---
 
@@ -392,5 +394,6 @@ Key environment variables (`backend/.env.example`):
 |---------|------|--------|---------|
 | 1.0 | 2026-08-17 | Engineering | Initial repository status snapshot |
 | 1.0.1 | 2026-08-17 | Engineering | Added cross-references to Reference Index and Implementation Ideation; usage note |
+| 1.1 | 2026-08-20 | Engineering | Added current-state addendum covering verified Phase 1 and tracked Phase 2 implementation |
 
-> **Update protocol:** On next codebase review, bump to v1.1, update §2–§12 as needed, add row here, and log in [Master Update Log](./GradGrid_Reference_Index.md#4-master-update-log).
+> **Update protocol:** On the next codebase review, bump the version, update §2–§12 as needed, add a row here, and log in [Master Update Log](./GradGrid_Reference_Index.md#4-master-update-log).

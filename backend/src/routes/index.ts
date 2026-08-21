@@ -22,6 +22,7 @@ import usersRoutes from '../modules/users/users.routes';
 import portalRoutes from '../modules/portal/portal.routes';
 import parentRoutes from '../modules/parent/parent.routes';
 import admissionRoutes from '../modules/admission/admission.routes';
+import teacherRoutes from '../modules/teacher/teacher.routes';
 
 const router = Router();
 
@@ -37,6 +38,7 @@ router.use('/portal', portalRoutes);
 router.use('/students', studentRoutes);
 router.use('/parents', parentRoutes);
 router.use('/admissions', admissionRoutes);
+router.use('/teachers', teacherRoutes);
 router.use('/academic', academicRoutes);
 router.use('/attendance', attendanceRoutes);
 router.use('/exams', examinationRoutes);
