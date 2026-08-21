@@ -66,22 +66,24 @@ Default credentials after seed:
 | Role | Email | Password |
 |------|-------|----------|
 | Platform admin | `admin@gradgrid.app` | `Admin@12345` |
-| Demo accountant | `accountant@demo.edu` | `Accountant@12345` |
-| Demo student portal | `student@demo.edu` | `Student@12345` |
-| Demo parent portal | `parent@demo.edu` | `Parent@12345` |
+| Demo institution owner | `owner@demo.edu` | `GradGrid@12345` |
+| Demo teacher | `teacher@demo.edu` | `GradGrid@12345` |
+| Demo accountant | `accountant@demo.edu` | `GradGrid@12345` |
+| Demo student portal | `student@demo.edu` | `GradGrid@12345` |
+| Demo parent portal | `parent@demo.edu` | `GradGrid@12345` |
 
 The portal seed also creates the linked `Aarav Sharma` student in `Class 10 / A`,
 the `Neha Sharma` parent account, the student-parent relationship, and the
 academic enrollment used by the student profile and ID-card views.
 
-If a demo account already existed with an unknown password, explicitly reset
-the seed-managed demo passwords during the seed run:
+If a non-admin demo account already existed with an unknown password, reset all
+seed-managed non-admin accounts to the common password during the seed run:
 
 ```bash
-SEED_RESET_PASSWORDS=true npm run prisma:seed
+SEED_RESET_PASSWORDS=true SEED_DEMO_COMMON_PASSWORD='GradGrid@12345' npm run prisma:seed
 ```
 
-Do not set this flag when preserving existing demo-account passwords is required.
+The reset flag never changes the platform administrator password.
 
 ### 5. Open the app
 

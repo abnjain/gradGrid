@@ -27,18 +27,20 @@ const prisma = new PrismaClient({ adapter });
 const PLATFORM_ADMIN_EMAIL = process.env.SEED_PLATFORM_ADMIN_EMAIL || 'admin@gradgrid.app';
 const PLATFORM_ADMIN_PASSWORD = process.env.SEED_PLATFORM_ADMIN_PASSWORD || 'Admin@12345';
 const DEMO_OWNER_EMAIL = process.env.SEED_DEMO_OWNER_EMAIL || 'owner@demo.edu';
-const DEMO_OWNER_PASSWORD = process.env.SEED_DEMO_OWNER_PASSWORD || 'Owner@12345';
 const DEMO_TEACHER_EMAIL = process.env.SEED_DEMO_TEACHER_EMAIL || 'teacher@demo.edu';
-const DEMO_TEACHER_PASSWORD = process.env.SEED_DEMO_TEACHER_PASSWORD || 'Teacher@12345';
 const DEMO_ACCOUNTANT_EMAIL = process.env.SEED_DEMO_ACCOUNTANT_EMAIL || 'accountant@demo.edu';
-const DEMO_ACCOUNTANT_PASSWORD = process.env.SEED_DEMO_ACCOUNTANT_PASSWORD || 'Accountant@12345';
+const DEMO_COMMON_PASSWORD = process.env.SEED_DEMO_COMMON_PASSWORD || 'GradGrid@12345';
 const RESET_SEED_PASSWORDS = process.env.SEED_RESET_PASSWORDS === 'true';
 
-async function ensureUserPassword(userId: string, password: string) {
+async function ensureUserPassword(
+  userId: string,
+  password: string,
+  resetExisting = RESET_SEED_PASSWORDS
+) {
   const currentPassword = await prisma.user_passwords.findFirst({
     where: { user_id: userId, is_current: true },
   });
-  if (currentPassword && !RESET_SEED_PASSWORDS) return;
+  if (currentPassword && !resetExisting) return;
 
   if (currentPassword) {
     await prisma.user_passwords.updateMany({
@@ -73,7 +75,9 @@ async function seedPlatformAdmin() {
         is_active: true,
       },
     });
-    await ensureUserPassword(existing.id, PLATFORM_ADMIN_PASSWORD);
+    // The platform administrator is intentionally never reset by the demo
+    // password flag; preserve the administrator's existing credential.
+    await ensureUserPassword(existing.id, PLATFORM_ADMIN_PASSWORD, false);
     await assignPlatformSuperAdmin(existing.id);
     return existing.id;
   }
@@ -265,7 +269,7 @@ async function seedMultiCampusDemo() {
 
   await ensureInstitutionUser({
     email: DEMO_OWNER_EMAIL,
-    password: DEMO_OWNER_PASSWORD,
+    password: DEMO_COMMON_PASSWORD,
     firstName: 'Anita',
     lastName: 'Sharma',
     institutionId: campusA.id,
@@ -275,7 +279,7 @@ async function seedMultiCampusDemo() {
 
   await ensureInstitutionUser({
     email: DEMO_TEACHER_EMAIL,
-    password: DEMO_TEACHER_PASSWORD,
+    password: DEMO_COMMON_PASSWORD,
     firstName: 'Ravi',
     lastName: 'Kumar',
     institutionId: campusA.id,
@@ -284,7 +288,7 @@ async function seedMultiCampusDemo() {
 
   await ensureInstitutionUser({
     email: DEMO_ACCOUNTANT_EMAIL,
-    password: DEMO_ACCOUNTANT_PASSWORD,
+    password: DEMO_COMMON_PASSWORD,
     firstName: 'Priya',
     lastName: 'Iyer',
     institutionId: campusA.id,
@@ -323,13 +327,11 @@ async function seedMultiCampusDemo() {
     }));
 
   const DEMO_STUDENT_EMAIL = process.env.SEED_DEMO_STUDENT_EMAIL || 'student@demo.edu';
-  const DEMO_STUDENT_PASSWORD = process.env.SEED_DEMO_STUDENT_PASSWORD || 'Student@12345';
   const DEMO_PARENT_EMAIL = process.env.SEED_DEMO_PARENT_EMAIL || 'parent@demo.edu';
-  const DEMO_PARENT_PASSWORD = process.env.SEED_DEMO_PARENT_PASSWORD || 'Parent@12345';
 
   const studentUser = await ensurePortalUser({
     email: DEMO_STUDENT_EMAIL,
-    password: DEMO_STUDENT_PASSWORD,
+    password: DEMO_COMMON_PASSWORD,
     firstName: 'Aarav',
     lastName: 'Sharma',
     userType: 'student',
@@ -407,7 +409,7 @@ async function seedMultiCampusDemo() {
 
   const parentUser = await ensurePortalUser({
     email: DEMO_PARENT_EMAIL,
-    password: DEMO_PARENT_PASSWORD,
+    password: DEMO_COMMON_PASSWORD,
     firstName: 'Neha',
     lastName: 'Sharma',
     userType: 'parent',
