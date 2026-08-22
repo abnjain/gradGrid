@@ -1,6 +1,6 @@
 # GradGrid Reference Documentation Index
 
-**Document Version:** 1.1
+**Document Version:** 1.2
 **Status:** Internal Reference (Agent / Engineering)  
 **Document Type:** Documentation Registry & Update Tracker  
 **Last Updated:** 2026-08-20
@@ -67,7 +67,7 @@ When updating any reference document listed in §3, **add a row to the Master Up
 | Document | Version | Last Updated | Purpose |
 |----------|---------|--------------|---------|
 | [GradGrid_Repository_Status_Report.md](./GradGrid_Repository_Status_Report.md) | 1.0 | 2026-08-17 | Point-in-time codebase snapshot |
-| [GradGrid_Implementation_Ideation.md](./GradGrid_Implementation_Ideation.md) | 1.3 | 2026-08-19 | Prioritized next steps and engineering ideas |
+| [GradGrid_Implementation_Ideation.md](./GradGrid_Implementation_Ideation.md) | 1.5 | 2026-08-20 | Prioritized next steps and engineering ideas |
 | [GradGrid_Auth_Portal_Split.md](./GradGrid_Auth_Portal_Split.md) | 1.0 | 2026-08-19 | Auth audience split + learner portal scope |
 | **This document** | 1.0 | 2026-08-17 | Index, cross-references, master update log |
 
@@ -85,6 +85,7 @@ All changes to implementation reference documents (and significant cross-doc upd
 
 | Date | Document(s) Updated | Version | Author | Summary of Changes |
 |------|---------------------|---------|--------|-------------------|
+| 2026-08-20 | `GradGrid_Implementation_Ideation.md`, `GradGrid_Reference_Index.md` | Ideation 1.5 | Engineering | Built the four remaining Phase 2 frontend pages (parents new/details, students export, admissions convert hub + per-enquiry convert) replacing EmptyState stubs; wired convert entry point from enquiry details |
 | 2026-08-20 | `GradGrid_Implementation_Ideation.md`, `GradGrid_Reference_Index.md`, `GradGrid_Repository_Status_Report.md` | Ideation 1.4 | Engineering | Phase 1 verification completed; remaining Phase 2 tracker work (teacher/staff CRUD and admission enquiry documents) completed and tested |
 | 2026-08-19 | `GradGrid_Auth_Portal_Split.md`, Ideation 1.3, IA, PRD, Status Report, Reference Index | — | Engineering | Auth/FE split `/platform` `/app` `/portal`; learner portal scope; Phase 2 students/parents/admissions |
 | 2026-08-17 | `GradGrid_Reference_Index.md` | 1.0 | Engineering | **Created.** Master index, document registry, cross-reference map, update log system |
@@ -161,6 +162,7 @@ When the codebase changes materially, follow this workflow:
 | Phase | Phase 2 tracker complete; Phase 3+ deferred |
 | Backend APIs live | Auth, platform tenants/users/RBAC, students, parents, admissions, portal, teachers/staff |
 | Integrated vertical slices | Auth + tenant routing; platform management; institution people/admissions; learner portal |
+| Phase 2 frontend pages | Parents (new/details), student export hub, admissions convert (hub + per-enquiry) built — no remaining Phase 2 EmptyState stubs in students/parents/admissions |
 | Database migrations | 5 applied migration directories; no new migration required for the existing staff/document models |
 | Remaining scope | Academic operations, attendance, examination, finance, library, communication, reports, durable object-storage provider |
 
@@ -172,3 +174,4 @@ When the codebase changes materially, follow this workflow:
 |---------|------|--------|---------|
 | 1.0 | 2026-08-17 | Engineering | Initial index, registry, update log, cross-reference map |
 | 1.1 | 2026-08-20 | Engineering | Synced current Phase 1 verification and Phase 2 tracker completion status |
+| 1.2 | 2026-08-20 | Engineering | Phase 2 frontend pages (parents, students export, admissions convert) built; Ideation bumped to 1.5 |

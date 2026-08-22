@@ -1,6 +1,6 @@
 # GradGrid Implementation Ideation
 
-**Document Version:** 1.4
+**Document Version:** 1.5
 **Status:** Internal Reference (Agent / Engineering)  
 **Document Type:** Engineering Backlog & Ideation  
 **Last Updated:** 2026-08-20
@@ -213,9 +213,12 @@ Update this table as items ship. Link to [Master Update Log](./GradGrid_Referenc
 | P1 | Students CRUD + portal invite (institution-scoped) | Done | 2026-08-19 |
 | P2 | Teachers / staff CRUD | Done | 2026-08-20 |
 | P3 | Parents CRUD + child links + portal invite | Done | 2026-08-19 |
+| P3-FE | `app/parents/new`, `app/parents/[id]` pages (register parent, link students, portal invite) | Done | 2026-08-20 |
 | P4 | Student CSV export | Done | 2026-08-19 |
+| P4-FE | `app/students/export` hub page (CSV download from hub + dedicated page) | Done | 2026-08-20 |
 | A1 | Enquiry list/create + status transitions | Done | 2026-08-19 |
 | A2 | Convert enquiry → student + parent link | Done | 2026-08-19 |
+| A2-FE | `app/admissions/convert` hub + per-enquiry `[id]/convert` pages wired from enquiry details | Done | 2026-08-20 |
 | A3 | Enquiry document upload | Done | 2026-08-20 |
 | PORTAL | Student/parent login: own institute only; student ID card/class; parent linked children only | Done | 2026-08-19 |
 | Auth slice | Login, register, reset, account | Done | 2026-08-17 |
@@ -232,3 +235,4 @@ Update this table as items ship. Link to [Master Update Log](./GradGrid_Referenc
 | 1.2 | 2026-08-19 | Engineering | Phase 1 complete: U1/U2 user invite, role assign, deactivate + platform users |
 | 1.3 | 2026-08-19 | Engineering | Auth split (`/platform` `/app` `/portal`); learner portal scope; Phase 2 students/parents/admissions APIs |
 | 1.4 | 2026-08-20 | Engineering | Completed remaining Phase 2 tracker items: institution-scoped teacher/staff CRUD and admission enquiry document upload/download/delete with Playwright coverage |
+| 1.5 | 2026-08-20 | Engineering | Built the four remaining Phase 2 frontend pages (parents new/details, students export, admissions convert hub + per-enquiry convert) replacing EmptyState stubs; wired convert entry point from enquiry details |
